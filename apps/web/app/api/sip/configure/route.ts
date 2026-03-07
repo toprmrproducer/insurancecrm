@@ -5,7 +5,7 @@ import { SIPTransport } from "@livekit/protocol";
 import { isAdmin, jsonError, requireAgencyContext } from "@/lib/auth";
 import { isDemoMode } from "@/lib/env";
 import { getSipClient } from "@/lib/livekit";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 const requestSchema = z.object({
   label: z.string().min(1),
@@ -40,7 +40,7 @@ export async function GET() {
       return jsonError("Admin access required", 403);
     }
 
-    const supabase = createAdminClient();
+    const supabase = await createServerSupabaseClient();
     const { data, error } = await supabase
       .from("sip_configurations")
       .select(
@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
       payload.phoneNumber,
     ]);
 
-    const supabase = createAdminClient();
+    const supabase = await createServerSupabaseClient();
     const { data, error } = await supabase
       .from("sip_configurations")
       .insert({

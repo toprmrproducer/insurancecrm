@@ -2,9 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FormEvent, useMemo, useState } from "react";
-
-import { createBrowserSupabaseClient } from "@/lib/supabase/browser";
+import { FormEvent, useState } from "react";
 
 type LoginFormProps = {
   liveEnabled: boolean;
@@ -16,18 +14,11 @@ export function LoginForm({ liveEnabled }: LoginFormProps) {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const supabase = useMemo(() => {
-    if (!liveEnabled) {
-      return null;
-    }
-
-    return createBrowserSupabaseClient();
-  }, [liveEnabled]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!supabase) {
+    if (!liveEnabled) {
       setMessage("Supabase is not configured yet on this deployment.");
       return;
     }
@@ -35,13 +26,21 @@ export function LoginForm({ liveEnabled }: LoginFormProps) {
     setLoading(true);
     setMessage(null);
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
+    const response = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        email,
+        password,
+      }),
     });
 
-    if (error) {
-      setMessage(error.message);
+    const payload = await response.json();
+
+    if (!response.ok) {
+      setMessage(payload.error ?? "Unable to sign in.");
       setLoading(false);
       return;
     }
@@ -90,8 +89,8 @@ export function LoginForm({ liveEnabled }: LoginFormProps) {
         <div className="card subtle-card">
           <p className="eyebrow">Backend Required</p>
           <p className="muted" style={{ marginBottom: 12 }}>
-            This deployment is not connected to Supabase Auth yet. Add the required Supabase
-            environment variables in Coolify, redeploy, and then sign in with a real user.
+            This deployment is not connected to Supabase Auth yet. Add Supabase URL and anon key
+            values in Coolify, redeploy, and then sign in with a real user.
           </p>
           <Link className="button" href="/dashboard">
             Open temporary workspace preview

@@ -1,8 +1,8 @@
 import { LoginForm } from "@/components/login-form";
-import { isDemoMode } from "@/lib/env";
+import { hasSupabaseAuthEnv, isDemoMode } from "@/lib/env";
 
 export default function LoginPage() {
-  const liveEnabled = !isDemoMode();
+  const liveEnabled = !isDemoMode() && hasSupabaseAuthEnv();
 
   return (
     <main className="shell">

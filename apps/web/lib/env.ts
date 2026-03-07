@@ -10,20 +10,39 @@ function hasEnv(name: string): boolean {
   return Boolean(process.env[name]?.trim());
 }
 
+function getFirstEnv(...names: string[]) {
+  for (const name of names) {
+    const value = process.env[name]?.trim();
+    if (value) {
+      return value;
+    }
+  }
+
+  return undefined;
+}
+
 export function hasSupabasePublicEnv() {
   return hasEnv("NEXT_PUBLIC_SUPABASE_URL") && hasEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY");
 }
 
+export function hasSupabaseAuthEnv() {
+  return Boolean(getFirstEnv("NEXT_PUBLIC_SUPABASE_URL", "SUPABASE_URL")) &&
+    Boolean(getFirstEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", "SUPABASE_ANON_KEY", "SUPABASE_SERVICE_KEY"));
+}
+
 export function isDemoMode() {
-  return process.env.NEXT_PUBLIC_DEMO_MODE === "true" || !hasSupabasePublicEnv();
+  return process.env.NEXT_PUBLIC_DEMO_MODE === "true" || !hasSupabaseAuthEnv();
 }
 
 export const env = {
   get supabaseUrl() {
-    return requireEnv("NEXT_PUBLIC_SUPABASE_URL");
+    return getFirstEnv("NEXT_PUBLIC_SUPABASE_URL", "SUPABASE_URL") ?? requireEnv("SUPABASE_URL");
   },
   get supabaseAnonKey() {
-    return requireEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY");
+    return (
+      getFirstEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", "SUPABASE_ANON_KEY", "SUPABASE_SERVICE_KEY") ??
+      requireEnv("SUPABASE_ANON_KEY")
+    );
   },
   get supabaseServiceKey() {
     return requireEnv("SUPABASE_SERVICE_KEY");
