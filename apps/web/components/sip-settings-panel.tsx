@@ -180,7 +180,7 @@ export function SipSettingsPanel({ liveEnabled }: SipSettingsPanelProps) {
           </label>
         </div>
 
-        <button className="button button-primary" type="submit" disabled={loading || !liveEnabled}>
+        <button className="button button-primary" type="submit" disabled={loading}>
           {loading ? "Saving line..." : "Save SIP line"}
         </button>
 
@@ -225,4 +225,3 @@ export function SipSettingsPanel({ liveEnabled }: SipSettingsPanelProps) {
     </div>
   );
 }
-

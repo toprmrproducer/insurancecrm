@@ -61,7 +61,7 @@ export function LoginForm({ liveEnabled }: LoginFormProps) {
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             placeholder="you@agency.com"
-            disabled={!liveEnabled || loading}
+            disabled={loading}
             required
           />
         </label>
@@ -74,12 +74,12 @@ export function LoginForm({ liveEnabled }: LoginFormProps) {
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             placeholder="Enter your password"
-            disabled={!liveEnabled || loading}
+            disabled={loading}
             required
           />
         </label>
 
-        <button className="button button-primary" type="submit" disabled={!liveEnabled || loading}>
+        <button className="button button-primary" type="submit" disabled={loading}>
           {loading ? "Signing in..." : "Sign in"}
         </button>
       </form>
@@ -101,4 +101,3 @@ export function LoginForm({ liveEnabled }: LoginFormProps) {
     </div>
   );
 }
-
