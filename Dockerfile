@@ -8,7 +8,7 @@ WORKDIR /app/apps/web
 ENV NEXT_TELEMETRY_DISABLED=1
 COPY --from=deps /app/apps/web/node_modules ./node_modules
 COPY apps/web ./
-RUN npm run build
+RUN mkdir -p public && npm run build
 
 FROM node:20-alpine AS runner
 WORKDIR /app
@@ -21,4 +21,3 @@ COPY --from=builder /app/apps/web/.next/standalone ./
 COPY --from=builder /app/apps/web/.next/static ./.next/static
 EXPOSE 3011
 CMD ["node", "server.js"]
-
