@@ -1,0 +1,9 @@
+{
+  "crons": [
+    {
+      "path": "/api/calls/retry",
+      "schedule": "*/30 * * * *"
+    }
+  ]
+}
+

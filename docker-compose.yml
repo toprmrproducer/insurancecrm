@@ -1,0 +1,10 @@
+services:
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+    ports:
+      - "3011:3011"
+    env_file:
+      - ./apps/web/.env.local
+    restart: unless-stopped
