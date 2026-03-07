@@ -16,6 +16,53 @@ const requestSchema = z.object({
   phoneNumber: z.string().min(7),
 });
 
+export async function GET() {
+  try {
+    if (isDemoMode()) {
+      return NextResponse.json({
+        success: true,
+        sipConfigs: [
+          {
+            id: "demo-main",
+            label: "Main Line",
+            phone_number: "+13125550182",
+            vobiz_sip_domain: "5f3a607b.sip.vobiz.ai",
+            livekit_outbound_trunk_id: "ST_demo_outbound",
+            livekit_inbound_trunk_id: "ST_demo_inbound",
+            is_active: true,
+          },
+        ],
+      });
+    }
+
+    const actor = await requireAgencyContext();
+    if (!isAdmin(actor.role)) {
+      return jsonError("Admin access required", 403);
+    }
+
+    const supabase = createAdminClient();
+    const { data, error } = await supabase
+      .from("sip_configurations")
+      .select(
+        "id, label, phone_number, vobiz_sip_domain, livekit_outbound_trunk_id, livekit_inbound_trunk_id, is_active",
+      )
+      .eq("agency_id", actor.agencyId)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      return jsonError(error.message, 500);
+    }
+
+    return NextResponse.json({ success: true, sipConfigs: data ?? [] });
+  } catch (error) {
+    if (error instanceof Response) {
+      return error;
+    }
+
+    return jsonError(error instanceof Error ? error.message : "Unexpected error", 500);
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     if (isDemoMode()) {

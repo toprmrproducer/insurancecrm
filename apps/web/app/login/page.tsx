@@ -1,20 +1,21 @@
-import Link from "next/link";
+import { LoginForm } from "@/components/login-form";
+import { isDemoMode } from "@/lib/env";
 
 export default function LoginPage() {
+  const liveEnabled = !isDemoMode();
+
   return (
     <main className="shell">
       <section className="card" style={{ maxWidth: 480, margin: "0 auto" }}>
         <p className="muted">Raj&apos;s Insurance CRM</p>
         <h1 style={{ marginTop: 0 }}>Sign in</h1>
         <p className="muted">
-          Deploy preview mode can skip auth while you review the UI. When you are ready for live
-          data, wire Supabase Auth and disable demo mode.
+          {liveEnabled
+            ? "Use your Supabase email and password to access the CRM."
+            : "This deployment is not connected to Supabase Auth yet. Add production environment variables to enable real sign-in."}
         </p>
-        <div className="button-row" style={{ marginTop: 24 }}>
-          <Link className="button button-primary" href="/dashboard">
-            Enter demo preview
-          </Link>
-          <span className="button">Email/password form goes here</span>
+        <div style={{ marginTop: 24 }}>
+          <LoginForm liveEnabled={liveEnabled} />
         </div>
       </section>
     </main>
