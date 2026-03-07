@@ -1,6 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { isDemoMode } from "@/lib/env";
+import { hasSupabasePublicEnv, isDemoMode } from "@/lib/env";
 
 type CookieMutation = {
   name: string;
@@ -19,7 +19,7 @@ const protectedPrefixes = [
 ];
 
 export async function middleware(request: NextRequest) {
-  if (isDemoMode()) {
+  if (isDemoMode() || !hasSupabasePublicEnv()) {
     return NextResponse.next();
   }
 

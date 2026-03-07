@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { isDemoMode } from "@/lib/env";
+import { hasSupabasePublicEnv, isDemoMode } from "@/lib/env";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export type AgencyContext = {
@@ -10,7 +10,7 @@ export type AgencyContext = {
 };
 
 export async function requireAgencyContext(): Promise<AgencyContext> {
-  if (isDemoMode()) {
+  if (isDemoMode() || !hasSupabasePublicEnv()) {
     return {
       userId: "demo-user",
       agencyId: "demo-agency",

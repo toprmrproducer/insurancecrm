@@ -6,8 +6,16 @@ function requireEnv(name: string): string {
   return value;
 }
 
+function hasEnv(name: string): boolean {
+  return Boolean(process.env[name]?.trim());
+}
+
+export function hasSupabasePublicEnv() {
+  return hasEnv("NEXT_PUBLIC_SUPABASE_URL") && hasEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY");
+}
+
 export function isDemoMode() {
-  return process.env.NEXT_PUBLIC_DEMO_MODE === "true";
+  return process.env.NEXT_PUBLIC_DEMO_MODE === "true" || !hasSupabasePublicEnv();
 }
 
 export const env = {
@@ -36,4 +44,3 @@ export const env = {
     return process.env.CRON_SECRET ?? "";
   },
 };
-
