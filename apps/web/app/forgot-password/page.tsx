@@ -1,8 +1,8 @@
 import { ForgotPasswordForm } from "@/components/forgot-password-form";
-import { hasSupabaseAuthEnv, isDemoMode } from "@/lib/env";
+import { hasSupabaseAuthEnv } from "@/lib/env";
 
 export default function ForgotPasswordPage() {
-  const liveEnabled = !isDemoMode() && hasSupabaseAuthEnv();
+  const liveEnabled = hasSupabaseAuthEnv();
 
   return (
     <main className="shell">
@@ -19,4 +19,3 @@ export default function ForgotPasswordPage() {
     </main>
   );
 }
-

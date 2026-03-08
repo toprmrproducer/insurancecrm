@@ -1,6 +1,7 @@
 import { AppShell } from "@/components/app-shell";
 import { Badge, SectionCard, StatCard } from "@/components/ui";
 import { getDashboardData } from "@/lib/live-data";
+import Link from "next/link";
 
 export default async function DashboardPage() {
   const dashboard = await getDashboardData();
@@ -11,12 +12,12 @@ export default async function DashboardPage() {
       description="Monitor lead volume, campaign momentum, and agent follow-up performance from a clean operating dashboard."
     >
       <div className="dashboard-actions">
-        <button className="button button-primary button-pill" type="button">
+        <Link className="button button-primary button-pill" href="/campaigns">
           + Launch Campaign
-        </button>
-        <button className="button button-outline button-pill" type="button">
+        </Link>
+        <Link className="button button-outline button-pill" href="/leads">
           Import Leads
-        </button>
+        </Link>
       </div>
 
       <div className="grid-4">
@@ -76,9 +77,9 @@ export default async function DashboardPage() {
                 ? `The system has logged ${dashboard.stats.callsToday} calls today and ${dashboard.stats.appointments} scheduled appointments.`
                 : "No live calls have been logged yet. Import leads, configure SIP, and launch the first campaign."}
             </p>
-            <button className="button button-primary button-pill" type="button">
+            <Link className="button button-primary button-pill" href="/campaigns">
               Open campaign runner
-            </button>
+            </Link>
           </div>
         </SectionCard>
 
@@ -120,13 +121,9 @@ export default async function DashboardPage() {
           <div className="timer-card">
             <p className="eyebrow">Calling Window</p>
             <strong className="timer-value">{dashboard.summary.avgDuration}</strong>
-            <div className="button-row">
-              <button className="button timer-button" type="button">
-                Calls today
-              </button>
-              <button className="button timer-button timer-stop" type="button">
-                {dashboard.stats.callsToday}
-              </button>
+            <div className="timer-metrics">
+              <span className="timer-chip">Calls today</span>
+              <span className="timer-chip timer-chip-soft">{dashboard.stats.callsToday}</span>
             </div>
           </div>
         </SectionCard>

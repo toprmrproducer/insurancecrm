@@ -91,19 +91,6 @@ export function LoginForm({ liveEnabled, queryError }: LoginFormProps) {
         <Link href="/signup">Create account</Link>
         <Link href="/forgot-password">Forgot password?</Link>
       </div>
-
-      {!liveEnabled ? (
-        <div className="card subtle-card">
-          <p className="eyebrow">Backend Required</p>
-          <p className="muted" style={{ marginBottom: 12 }}>
-            This deployment is not connected to Supabase Auth yet. Add Supabase URL and anon key
-            values in Coolify, redeploy, and then sign in with a real user.
-          </p>
-          <Link className="button" href="/dashboard">
-            Open temporary workspace preview
-          </Link>
-        </div>
-      ) : null}
     </div>
   );
 }

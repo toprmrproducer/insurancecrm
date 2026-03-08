@@ -3,7 +3,7 @@ import { z } from "zod";
 import { SIPTransport } from "@livekit/protocol";
 
 import { isAdmin, jsonError, requireAgencyContext } from "@/lib/auth";
-import { isDemoMode } from "@/lib/env";
+import { hasLivekitEnv, hasSupabaseAuthEnv, isDemoMode } from "@/lib/env";
 import { getSipClient } from "@/lib/livekit";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
@@ -18,6 +18,10 @@ const requestSchema = z.object({
 
 export async function GET() {
   try {
+    if (!hasSupabaseAuthEnv() || !hasLivekitEnv()) {
+      return jsonError("SIP configuration is not available on this deployment.", 503);
+    }
+
     if (isDemoMode()) {
       return NextResponse.json({
         success: true,
@@ -65,6 +69,10 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    if (!hasSupabaseAuthEnv() || !hasLivekitEnv()) {
+      return jsonError("SIP configuration is not available on this deployment.", 503);
+    }
+
     if (isDemoMode()) {
       const payload = requestSchema.parse(await request.json());
       return NextResponse.json({

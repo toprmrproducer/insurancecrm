@@ -18,10 +18,6 @@ export default async function AppointmentsPage() {
                 <p className="eyebrow">{appointment.scheduledFor}</p>
                 <h3 style={{ marginTop: 0 }}>{appointment.lead}</h3>
                 <Badge tone="positive">{appointment.status}</Badge>
-                <div className="button-row" style={{ marginTop: 16 }}>
-                  <span className="button">Mark complete</span>
-                  <span className="button">Reschedule</span>
-                </div>
               </article>
             ))}
           </div>

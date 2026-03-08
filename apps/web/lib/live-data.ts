@@ -31,7 +31,7 @@ type DashboardData = {
   };
 };
 
-type LeadRow = {
+export type LeadRow = {
   id: string;
   name: string;
   phone: string;
@@ -41,7 +41,7 @@ type LeadRow = {
   status: string;
 };
 
-type CallRow = {
+export type CallRow = {
   id: string;
   lead: string;
   status: string;
@@ -50,21 +50,21 @@ type CallRow = {
   summary: string;
 };
 
-type ProfilePageData = {
+export type ProfilePageData = {
   profileName: string;
   role: string;
   email: string;
   agencyName: string;
 };
 
-type AppointmentRow = {
+export type AppointmentRow = {
   id: string;
   lead: string;
   scheduledFor: string;
   status: string;
 };
 
-type CampaignCard = {
+export type CampaignCard = {
   id: string;
   name: string;
   assistant: string;
@@ -73,11 +73,18 @@ type CampaignCard = {
   successRate: string;
 };
 
-type AnalyticsData = {
+export type AnalyticsData = {
   bookingRate: string;
   transferRate: string;
   avgDuration: string;
   dncRate: string;
+};
+
+export type SipOption = {
+  id: string;
+  label: string;
+  phoneNumber: string;
+  isActive: boolean;
 };
 
 type UserContext = {
@@ -615,4 +622,36 @@ export async function getAnalyticsData(): Promise<AnalyticsData> {
     avgDuration: formatDuration(averageDurationSeconds),
     dncRate: `${Math.round((dnc / leadCount) * 100)}%`,
   };
+}
+
+export async function getSipConfigOptions(): Promise<SipOption[]> {
+  if (isDemoMode() || !hasSupabaseAuthEnv()) {
+    return [
+      {
+        id: "demo-sip-config",
+        label: "Main Line",
+        phoneNumber: "+13125550182",
+        isActive: true,
+      },
+    ];
+  }
+
+  const context = await getUserContext();
+  if (!context?.agencyId) {
+    return [];
+  }
+
+  const supabase = await createServerSupabaseClient();
+  const { data } = await supabase
+    .from("sip_configurations")
+    .select("id, label, phone_number, is_active")
+    .eq("agency_id", context.agencyId)
+    .order("created_at", { ascending: false });
+
+  return (data ?? []).map((config) => ({
+    id: config.id,
+    label: config.label,
+    phoneNumber: config.phone_number,
+    isActive: config.is_active,
+  }));
 }

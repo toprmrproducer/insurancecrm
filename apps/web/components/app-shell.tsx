@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { getAppShellData } from "@/lib/live-data";
+import { SidebarNav } from "@/components/sidebar-nav";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard" },
@@ -32,17 +33,12 @@ export async function AppShell({
           <div className="brand-mark">R</div>
           <div>
             <p className="eyebrow">Raj&apos;s CRM</p>
-            <h2 className="sidebar-title">Insurance Control</h2>
+            <h2 className="sidebar-title">Insurance CRM</h2>
+            <p className="muted sidebar-copy">Calling, lead routing, and follow-up operations.</p>
           </div>
         </div>
 
-        <nav className="sidebar-nav">
-          {navItems.map((item) => (
-            <Link key={item.href} href={item.href} className="nav-link">
-              {item.label}
-            </Link>
-          ))}
-        </nav>
+        <SidebarNav items={navItems} />
 
         <div className="sidebar-footer promo-card">
           <p className="eyebrow">Agency</p>
@@ -50,27 +46,23 @@ export async function AppShell({
           <p className="muted" style={{ marginBottom: 16 }}>
             Voice campaigns, lead routing, and review workflows in one workspace.
           </p>
-          <button className="button button-primary" type="button">
-            Open workspace
-          </button>
+          <Link className="button button-primary" href="/settings/profile">
+            View profile
+          </Link>
         </div>
       </aside>
 
       <section className="content">
         <div className="topbar card">
-          <div className="search-shell">
-            <span className="search-icon">⌕</span>
-            <span className="muted">Search leads, calls, campaigns</span>
-            <span className="search-shortcut">⌘ F</span>
+          <div className="workspace-summary">
+            <p className="eyebrow">Workspace</p>
+            <strong>{shell.agencyName}</strong>
+            <p className="muted workspace-copy">
+              Connected CRM workspace for live leads, call activity, and SIP operations.
+            </p>
           </div>
 
           <div className="topbar-actions">
-            <button className="icon-button" type="button">
-              ✉
-            </button>
-            <button className="icon-button" type="button">
-              🔔
-            </button>
             <div className="profile-pill">
               <div className="profile-avatar">{shell.userInitials}</div>
               <div>
@@ -78,6 +70,14 @@ export async function AppShell({
                 <p className="muted profile-email">{shell.userEmail}</p>
               </div>
             </div>
+            <Link className="button button-outline" href="/settings/sip">
+              SIP settings
+            </Link>
+            <form action="/api/auth/logout" method="post">
+              <button className="button" type="submit">
+                Log out
+              </button>
+            </form>
           </div>
         </div>
 

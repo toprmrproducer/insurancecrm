@@ -1,7 +1,6 @@
 import { NextRequest } from "next/server";
 
-import { env } from "@/lib/env";
-import { isDemoMode } from "@/lib/env";
+import { env, hasLivekitEnv, hasSupabaseAuthEnv, isDemoMode } from "@/lib/env";
 import { type LeadRecord, type SipConfigRecord, startOutboundCall } from "@/lib/calls";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -15,6 +14,10 @@ function isAuthorizedCron(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
+  if (!hasSupabaseAuthEnv() || !hasLivekitEnv()) {
+    return new Response("Retry calling is not configured on this deployment.", { status: 503 });
+  }
+
   if (isDemoMode()) {
     return Response.json({ success: true, retried: 0, demo: true });
   }

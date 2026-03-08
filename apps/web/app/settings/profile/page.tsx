@@ -35,11 +35,11 @@ export default async function ProfileSettingsPage() {
               <strong>{profile.agencyName}</strong>
             </div>
             <div className="list-row">
-              <span className="muted">Timezone</span>
+              <span className="muted">Default timezone</span>
               <strong>America/Chicago</strong>
             </div>
             <div className="list-row">
-              <span className="muted">Calling window</span>
+              <span className="muted">Default calling window</span>
               <strong>9:00 AM to 8:00 PM</strong>
             </div>
           </div>

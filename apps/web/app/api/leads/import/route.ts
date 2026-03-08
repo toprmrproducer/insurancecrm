@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 import { jsonError, requireAgencyContext } from "@/lib/auth";
-import { isDemoMode } from "@/lib/env";
+import { hasSupabaseAuthEnv, isDemoMode } from "@/lib/env";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 const formSchema = z.object({
@@ -27,6 +27,10 @@ function parseCsvDate(value: string | undefined) {
 
 export async function POST(request: NextRequest) {
   try {
+    if (!hasSupabaseAuthEnv()) {
+      return jsonError("Lead import is not configured on this deployment.", 503);
+    }
+
     if (isDemoMode()) {
       return NextResponse.json({ success: true, imported: 12, total: 12, skipped: 0, demo: true });
     }

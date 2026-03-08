@@ -4,6 +4,9 @@ import { getCallsPageData } from "@/lib/live-data";
 
 export default async function CallsPage() {
   const calls = await getCallsPageData();
+  const bookedCalls = calls.filter((call) => call.outcome === "appointment_booked").length;
+  const voicemailCalls = calls.filter((call) => call.status === "voicemail").length;
+  const transferredCalls = calls.filter((call) => call.outcome === "transferred").length;
 
   return (
     <AppShell
@@ -43,18 +46,23 @@ export default async function CallsPage() {
         </SectionCard>
 
         <SectionCard title="Analysis summary" meta="What the latest calls are signaling">
-          <article className="card">
-            <Badge tone="positive">Live data</Badge>
-            <h3>Outcome feed</h3>
-            <p className="muted">
-              This panel now reflects live call rows and saved AI summaries instead of seeded preview
-              content.
-            </p>
-            <p>
-              Once calls complete and `call_analysis` rows are written, the summaries and outcomes
-              shown here will update from your production data.
-            </p>
-          </article>
+          <div className="grid-3">
+            <article className="summary-card">
+              <p className="eyebrow">Booked</p>
+              <p className="kpi">{bookedCalls}</p>
+              <Badge tone="positive">appointments</Badge>
+            </article>
+            <article className="summary-card">
+              <p className="eyebrow">Transferred</p>
+              <p className="kpi">{transferredCalls}</p>
+              <Badge tone="indigo">warm handoffs</Badge>
+            </article>
+            <article className="summary-card">
+              <p className="eyebrow">Voicemail</p>
+              <p className="kpi">{voicemailCalls}</p>
+              <Badge tone="warning">follow-up needed</Badge>
+            </article>
+          </div>
         </SectionCard>
       </div>
     </AppShell>

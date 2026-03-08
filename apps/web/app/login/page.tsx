@@ -1,12 +1,12 @@
 import { LoginForm } from "@/components/login-form";
-import { hasSupabaseAuthEnv, isDemoMode } from "@/lib/env";
+import { hasSupabaseAuthEnv } from "@/lib/env";
 
 export default async function LoginPage({
   searchParams,
 }: {
   searchParams: Promise<{ error?: string }>;
 }) {
-  const liveEnabled = !isDemoMode() && hasSupabaseAuthEnv();
+  const liveEnabled = hasSupabaseAuthEnv();
   const resolvedSearchParams = await searchParams;
 
   return (

@@ -1,8 +1,8 @@
 import { SignupForm } from "@/components/signup-form";
-import { hasSupabaseAuthEnv, isDemoMode } from "@/lib/env";
+import { hasSupabaseAuthEnv } from "@/lib/env";
 
 export default function SignupPage() {
-  const liveEnabled = !isDemoMode() && hasSupabaseAuthEnv();
+  const liveEnabled = hasSupabaseAuthEnv();
 
   return (
     <main className="shell">

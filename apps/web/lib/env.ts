@@ -31,7 +31,11 @@ export function hasSupabaseAuthEnv() {
 }
 
 export function isDemoMode() {
-  return process.env.NEXT_PUBLIC_DEMO_MODE === "true" || !hasSupabaseAuthEnv();
+  return process.env.NEXT_PUBLIC_DEMO_MODE === "true" && !hasSupabaseAuthEnv();
+}
+
+export function hasLivekitEnv() {
+  return hasEnv("LIVEKIT_URL") && hasEnv("LIVEKIT_API_KEY") && hasEnv("LIVEKIT_API_SECRET");
 }
 
 export const env = {

@@ -4,7 +4,7 @@ import { z } from "zod";
 import { jsonError, requireAgencyContext } from "@/lib/auth";
 import { startOutboundCall } from "@/lib/calls";
 import { demoApiResponse } from "@/lib/demo";
-import { isDemoMode } from "@/lib/env";
+import { hasLivekitEnv, hasSupabaseAuthEnv, isDemoMode } from "@/lib/env";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 const requestSchema = z.object({
@@ -15,6 +15,10 @@ const requestSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    if (!hasSupabaseAuthEnv() || !hasLivekitEnv()) {
+      return jsonError("Calling is not configured on this deployment.", 503);
+    }
+
     if (isDemoMode()) {
       const payload = requestSchema.parse(await request.json());
       return NextResponse.json(

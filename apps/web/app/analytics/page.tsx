@@ -20,14 +20,16 @@ export default async function AnalyticsPage() {
       <div className="grid-2">
         <SectionCard title="Performance note" meta="Current read on the agency workspace">
           <p className="muted">
-            This view is now powered by live counts from your Supabase tables. As calls complete and
-            analyses are stored, the KPI blocks above will change automatically.
+            Booking, transfer, duration, and DNC metrics are calculated from your live lead, call,
+            and analysis records. As the team imports leads and runs campaigns, these KPI blocks
+            update automatically without any seeded filler data.
           </p>
         </SectionCard>
-        <SectionCard title="Next step" meta="What to wire after the data layer">
+        <SectionCard title="Operational readout" meta="How to interpret the KPI set">
           <p className="muted">
-            Replace this section with line, bar, and pie charts once you want a richer analytics
-            layer. The fake placeholder panels have been removed.
+            A healthy workspace should show booking and transfer rates rising while DNC stays low.
+            If average duration climbs without conversions, tighten the campaign targeting or revise
+            the voice prompt flow before scaling volume.
           </p>
         </SectionCard>
       </div>

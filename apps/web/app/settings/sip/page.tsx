@@ -1,10 +1,10 @@
 import { AppShell } from "@/components/app-shell";
 import { SipSettingsPanel } from "@/components/sip-settings-panel";
 import { SectionCard } from "@/components/ui";
-import { isDemoMode } from "@/lib/env";
+import { hasLivekitEnv, hasSupabaseAuthEnv } from "@/lib/env";
 
 export default function SipSettingsPage() {
-  const liveEnabled = !isDemoMode();
+  const liveEnabled = hasSupabaseAuthEnv() && hasLivekitEnv();
 
   return (
     <AppShell
