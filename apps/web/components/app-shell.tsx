@@ -34,11 +34,12 @@ export async function AppShell({
           <div className="brand-mark">R</div>
           <div>
             <p className="eyebrow">Raj&apos;s CRM</p>
-            <h2 className="sidebar-title">Insurance CRM</h2>
-            <p className="muted sidebar-copy">Calling, lead routing, and follow-up operations.</p>
+            <h2 className="sidebar-title">Insurance Control</h2>
+            <p className="muted sidebar-copy">Lead intake, campaign dialing, and outcomes in one workspace.</p>
           </div>
         </div>
 
+        <p className="nav-section-label">Navigation</p>
         <SidebarNav items={navItems} />
 
         <div className="sidebar-footer promo-card">
@@ -55,15 +56,25 @@ export async function AppShell({
 
       <section className="content">
         <div className="topbar card">
-          <div className="workspace-summary">
-            <p className="eyebrow">Workspace</p>
-            <strong>{shell.agencyName}</strong>
-            <p className="muted workspace-copy">
-              Connected CRM workspace for live leads, call activity, and SIP operations.
-            </p>
+          <div className="topbar-search-wrap">
+            <span className="topbar-search-icon">⌕</span>
+            <input
+              className="topbar-search-input"
+              value=""
+              placeholder="Search leads, calls, and campaigns"
+              readOnly
+              aria-label="Search"
+            />
+            <span className="topbar-shortcut">⌘ F</span>
           </div>
 
           <div className="topbar-actions">
+            <Link className="icon-link" href="/settings/agent" aria-label="Agent settings">
+              ⚙
+            </Link>
+            <Link className="icon-link" href="/calls" aria-label="Calls">
+              ☎
+            </Link>
             <div className="profile-pill">
               <div className="profile-avatar">{shell.userInitials}</div>
               <div>
