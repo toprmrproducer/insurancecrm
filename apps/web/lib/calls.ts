@@ -1,8 +1,11 @@
 import { randomUUID } from "node:crypto";
 
+import { EncodedFileOutput, EncodedFileType, EgressInfo, S3Upload } from "livekit-server-sdk";
+
+import { env, hasRecordingUploadEnv } from "@/lib/env";
 import { normalizeStoredPhone } from "@/lib/phone";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getAgentDispatchClient, getRoomServiceClient, getSipClient } from "@/lib/livekit";
+import { getAgentDispatchClient, getEgressClient, getRoomServiceClient, getSipClient } from "@/lib/livekit";
 
 export type LeadRecord = {
   id: string;
@@ -44,6 +47,7 @@ export async function startOutboundCall({ lead, sipConfig, retryOf }: StartOutbo
   const roomServiceClient = getRoomServiceClient();
   const agentDispatchClient = getAgentDispatchClient();
   const sipClient = getSipClient();
+  const egressClient = getEgressClient();
   const roomName = `call-${randomUUID()}`;
   const dialNumber = normalizeStoredPhone(lead.phone);
   const fromNumber = normalizeStoredPhone(sipConfig.phone_number);
@@ -51,6 +55,9 @@ export async function startOutboundCall({ lead, sipConfig, retryOf }: StartOutbo
   if (dialNumber.length < 11) {
     throw new Error("Lead phone number is not dialable.");
   }
+
+  const recordingPath = `recordings/${lead.agency_id}/${roomName}.ogg`;
+  const recordingConfigured = hasRecordingUploadEnv();
 
   const { data: call, error: insertError } = await supabase
     .from("calls")
@@ -64,6 +71,8 @@ export async function startOutboundCall({ lead, sipConfig, retryOf }: StartOutbo
       status: "initiated",
       retry_of: retryOf ?? null,
       analysis_status: "pending",
+      recording_status: recordingConfigured ? "starting" : "not_configured",
+      recording_bucket_path: recordingPath,
     })
     .select("id")
     .single();
@@ -84,6 +93,43 @@ export async function startOutboundCall({ lead, sipConfig, retryOf }: StartOutbo
       emptyTimeout: 300,
       maxParticipants: 3,
     });
+
+    if (recordingConfigured) {
+      const output = new EncodedFileOutput({
+        fileType: EncodedFileType.OGG,
+        filepath: recordingPath,
+        output: {
+          case: "s3",
+          value: new S3Upload({
+            accessKey: env.supabaseS3AccessKey,
+            secret: env.supabaseS3Secret,
+            bucket: env.supabaseS3Bucket,
+            region: env.supabaseS3Region,
+            endpoint: env.supabaseS3Endpoint,
+            forcePathStyle: true,
+          }),
+        },
+      });
+
+      try {
+        const egressInfo = await egressClient.startRoomCompositeEgress(roomName, { file: output });
+        await markEgressStarted({
+          callId: call.id,
+          egressInfo,
+        });
+      } catch (recordingError) {
+        await supabase
+          .from("calls")
+          .update({
+            recording_status: "failed",
+            recording_error:
+              recordingError instanceof Error
+                ? recordingError.message.slice(0, 1024)
+                : "Unable to start recording egress",
+          })
+          .eq("id", call.id);
+      }
+    }
 
     await agentDispatchClient.createDispatch(roomName, "insurance-agent", {
       metadata,
@@ -116,4 +162,22 @@ export async function startOutboundCall({ lead, sipConfig, retryOf }: StartOutbo
     callId: call.id,
     roomName,
   };
+}
+
+async function markEgressStarted({
+  callId,
+  egressInfo,
+}: {
+  callId: string;
+  egressInfo: EgressInfo;
+}) {
+  const supabase = createAdminClient();
+  await supabase
+    .from("calls")
+    .update({
+      livekit_egress_id: egressInfo.egressId,
+      recording_status: "recording",
+      recording_error: null,
+    })
+    .eq("id", callId);
 }

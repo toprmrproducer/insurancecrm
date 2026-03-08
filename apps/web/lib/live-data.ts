@@ -55,6 +55,8 @@ export type CallRow = {
   duration: string;
   outcome: string;
   summary: string;
+  recordingUrl: string | null;
+  recordingStatus: string | null;
 };
 
 export type ProfilePageData = {
@@ -432,6 +434,8 @@ export async function getCallsPageData(): Promise<CallRow[]> {
       duration: call.duration,
       outcome: call.outcome,
       summary: call.summary,
+      recordingUrl: null,
+      recordingStatus: null,
     }));
   }
 
@@ -444,7 +448,7 @@ export async function getCallsPageData(): Promise<CallRow[]> {
   const [{ data: calls }, { data: analyses }, { data: leads }] = await Promise.all([
     supabase
       .from("calls")
-      .select("id, lead_id, status, duration_seconds, created_at")
+      .select("id, lead_id, status, duration_seconds, recording_url, recording_status, created_at")
       .eq("agency_id", context.agencyId)
       .order("created_at", { ascending: false })
       .limit(20),
@@ -472,6 +476,8 @@ export async function getCallsPageData(): Promise<CallRow[]> {
       duration: formatDuration(call.duration_seconds),
       outcome: analysis?.outcome ?? call.status,
       summary: analysis?.summary ?? `Call status: ${call.status}`,
+      recordingUrl: call.recording_url,
+      recordingStatus: call.recording_status,
     };
   });
 }

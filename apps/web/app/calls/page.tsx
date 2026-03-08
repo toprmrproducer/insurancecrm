@@ -22,6 +22,25 @@ export default async function CallsPage() {
                   <div>
                     <strong>{call.lead}</strong>
                     <p className="muted">{call.summary}</p>
+                    <div className="button-row" style={{ marginTop: 8 }}>
+                      <Badge tone="indigo">Recording: {call.recordingStatus ?? "not_started"}</Badge>
+                      {call.recordingUrl ? (
+                        call.recordingUrl.startsWith("http") ? (
+                          <a
+                            className="button"
+                            href={call.recordingUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            Open recording
+                          </a>
+                        ) : (
+                          <span className="muted">Path: {call.recordingUrl}</span>
+                        )
+                      ) : (
+                        <span className="muted">No recording saved yet</span>
+                      )}
+                    </div>
                   </div>
                   <div className="stack" style={{ alignItems: "end" }}>
                     <Badge

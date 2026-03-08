@@ -38,6 +38,10 @@ export function hasLivekitEnv() {
   return hasEnv("LIVEKIT_URL") && hasEnv("LIVEKIT_API_KEY") && hasEnv("LIVEKIT_API_SECRET");
 }
 
+export function hasRecordingUploadEnv() {
+  return hasEnv("SUPABASE_S3_ACCESS_KEY") && hasEnv("SUPABASE_S3_SECRET");
+}
+
 export const env = {
   get supabaseUrl() {
     return getFirstEnv("NEXT_PUBLIC_SUPABASE_URL", "SUPABASE_URL") ?? requireEnv("SUPABASE_URL");
@@ -65,5 +69,20 @@ export const env = {
   },
   get cronSecret() {
     return process.env.CRON_SECRET ?? "";
+  },
+  get supabaseS3AccessKey() {
+    return process.env.SUPABASE_S3_ACCESS_KEY ?? "";
+  },
+  get supabaseS3Secret() {
+    return process.env.SUPABASE_S3_SECRET ?? "";
+  },
+  get supabaseS3Bucket() {
+    return process.env.SUPABASE_S3_BUCKET ?? "call-recordings";
+  },
+  get supabaseS3Region() {
+    return process.env.SUPABASE_S3_REGION ?? "us-east-1";
+  },
+  get supabaseS3Endpoint() {
+    return process.env.SUPABASE_S3_ENDPOINT ?? `${this.supabaseUrl}/storage/v1/s3`;
   },
 };
