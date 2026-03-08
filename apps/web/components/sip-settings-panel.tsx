@@ -116,6 +116,7 @@ export function SipSettingsPanel({ liveEnabled }: SipSettingsPanelProps) {
               value={form.label}
               onChange={(event) => setForm({ ...form, label: event.target.value })}
               placeholder="Main Line"
+              autoComplete="organization"
               required
             />
           </label>
@@ -127,6 +128,7 @@ export function SipSettingsPanel({ liveEnabled }: SipSettingsPanelProps) {
               value={form.phoneNumber}
               onChange={(event) => setForm({ ...form, phoneNumber: event.target.value })}
               placeholder="+13125550182"
+              autoComplete="tel"
               required
             />
           </label>
@@ -140,6 +142,7 @@ export function SipSettingsPanel({ liveEnabled }: SipSettingsPanelProps) {
               value={form.vobizSipDomain}
               onChange={(event) => setForm({ ...form, vobizSipDomain: event.target.value })}
               placeholder="5f3a607b.sip.vobiz.ai"
+              autoComplete="url"
               required
             />
           </label>
@@ -151,6 +154,7 @@ export function SipSettingsPanel({ liveEnabled }: SipSettingsPanelProps) {
               value={form.vobizTrunkId}
               onChange={(event) => setForm({ ...form, vobizTrunkId: event.target.value })}
               placeholder="Optional reference from Vobiz"
+              autoComplete="off"
             />
           </label>
         </div>
@@ -163,6 +167,7 @@ export function SipSettingsPanel({ liveEnabled }: SipSettingsPanelProps) {
               value={form.vobizUsername}
               onChange={(event) => setForm({ ...form, vobizUsername: event.target.value })}
               placeholder="username"
+              autoComplete="username"
               required
             />
           </label>
@@ -175,6 +180,7 @@ export function SipSettingsPanel({ liveEnabled }: SipSettingsPanelProps) {
               value={form.vobizPassword}
               onChange={(event) => setForm({ ...form, vobizPassword: event.target.value })}
               placeholder="password"
+              autoComplete="current-password"
               required
             />
           </label>
