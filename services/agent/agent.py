@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 import os
@@ -303,25 +304,43 @@ async def entrypoint(ctx: JobContext) -> None:
         )
     )
 
-    await session.start(
-        room=ctx.room,
-        agent=agent,
-        room_input_options=RoomInputOptions(noise_cancellation=True),
-    )
+    shutdown_event = asyncio.Event()
 
-    opening_line = agent_config.get("first_line")
-    opening_instructions = (
-        f'Start the outbound call now. Say exactly this opening line first: "{opening_line}"'
-        if opening_line
-        else "Start the outbound call now with a natural greeting."
-    )
-    await session.generate_reply(
-        instructions=opening_instructions,
-        allow_interruptions=True,
-    )
+    async def on_shutdown(_: str) -> None:
+        shutdown_event.set()
 
-    await ctx.wait_for_disconnect()
-    await finalize_call(call_id, lead_id, agent)
+    ctx.add_shutdown_callback(on_shutdown)
+
+    try:
+        await session.start(
+            room=ctx.room,
+            agent=agent,
+            room_input_options=RoomInputOptions(noise_cancellation=True),
+        )
+
+        opening_line = agent_config.get("first_line")
+        opening_instructions = (
+            f'Start the outbound call now. Say exactly this opening line first: "{opening_line}"'
+            if opening_line
+            else "Start the outbound call now with a natural greeting."
+        )
+        await session.generate_reply(
+            instructions=opening_instructions,
+            allow_interruptions=True,
+        )
+
+        await shutdown_event.wait()
+    except Exception:
+        logger.exception("Agent job failed for call %s", call_id)
+        supabase.table("calls").update(
+            {
+                "status": "failed",
+                "ended_at": datetime.now(UTC).isoformat(),
+            }
+        ).eq("id", call_id).execute()
+        raise
+    finally:
+        await finalize_call(call_id, lead_id, agent)
 
 
 if __name__ == "__main__":
