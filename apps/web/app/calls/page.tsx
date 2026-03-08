@@ -1,52 +1,62 @@
 import { AppShell } from "@/components/app-shell";
 import { Badge, SectionCard } from "@/components/ui";
-import { demoCalls } from "@/lib/demo";
+import { getCallsPageData } from "@/lib/live-data";
 
-export default function CallsPage() {
+export default async function CallsPage() {
+  const calls = await getCallsPageData();
+
   return (
     <AppShell
       title="Calls"
-      description="Call history preview with AI outcome summaries and transcript-ready layout zones."
+      description="Recent call history and AI analysis derived from your live Supabase records."
     >
       <div className="grid-2">
         <SectionCard title="Call history" meta="Latest voice sessions">
           <div className="list">
-            {demoCalls.map((call) => (
-              <div key={call.id} className="list-row">
-                <div>
-                  <strong>{call.lead}</strong>
-                  <p className="muted">{call.summary}</p>
+            {calls.length > 0 ? (
+              calls.map((call) => (
+                <div key={call.id} className="list-row">
+                  <div>
+                    <strong>{call.lead}</strong>
+                    <p className="muted">{call.summary}</p>
+                  </div>
+                  <div className="stack" style={{ alignItems: "end" }}>
+                    <Badge
+                      tone={
+                        call.status === "voicemail"
+                          ? "warning"
+                          : call.outcome === "appointment_booked"
+                            ? "positive"
+                            : "indigo"
+                      }
+                    >
+                      {call.outcome}
+                    </Badge>
+                    <span className="muted">{call.duration}</span>
+                  </div>
                 </div>
-                <div className="stack" style={{ alignItems: "end" }}>
-                  <Badge tone={call.status === "voicemail" ? "warning" : "positive"}>
-                    {call.status}
-                  </Badge>
-                  <span className="muted">{call.duration}</span>
-                </div>
-              </div>
-            ))}
+              ))
+            ) : (
+              <p className="muted">No calls have been logged yet.</p>
+            )}
           </div>
         </SectionCard>
 
-        <SectionCard title="AI analysis card" meta="Expandable row target">
+        <SectionCard title="Analysis summary" meta="What the latest calls are signaling">
           <article className="card">
-            <Badge tone="positive">Positive sentiment</Badge>
-            <h3>Appointment booked</h3>
+            <Badge tone="positive">Live data</Badge>
+            <h3>Outcome feed</h3>
             <p className="muted">
-              Recommended action: licensed agent callback at the confirmed time window.
+              This panel now reflects live call rows and saved AI summaries instead of seeded preview
+              content.
             </p>
             <p>
-              Summary: Lead verified personal details, confirmed interest, and accepted a specific
-              appointment slot for tomorrow morning.
+              Once calls complete and `call_analysis` rows are written, the summaries and outcomes
+              shown here will update from your production data.
             </p>
-            <div className="button-row">
-              <span className="button">Play recording</span>
-              <span className="button">View full transcript</span>
-            </div>
           </article>
         </SectionCard>
       </div>
     </AppShell>
   );
 }
-

@@ -1,70 +1,187 @@
 import { AppShell } from "@/components/app-shell";
-import { SectionCard, StatCard, Badge } from "@/components/ui";
-import { demoCalls, demoCampaigns, demoStats } from "@/lib/demo";
+import { Badge, SectionCard, StatCard } from "@/components/ui";
+import { getDashboardData } from "@/lib/live-data";
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const dashboard = await getDashboardData();
+
   return (
     <AppShell
       title="Dashboard"
-      description="A deployable visual preview of the CRM shell, campaign health, and recent AI-assisted calling activity."
+      description="Monitor lead volume, campaign momentum, and agent follow-up performance from a clean operating dashboard."
     >
-      <div className="grid-4">
-        <StatCard label="Total leads" value={demoStats.totalLeads} delta="+12% this week" />
-        <StatCard label="Calls today" value={demoStats.callsToday} delta="+8 since 2 PM" />
-        <StatCard label="Appointments" value={demoStats.bookedToday} delta="+4 vs yesterday" />
-        <StatCard label="Transfers" value={demoStats.transfersToday} delta="+2 live now" />
+      <div className="dashboard-actions">
+        <button className="button button-primary button-pill" type="button">
+          + Launch Campaign
+        </button>
+        <button className="button button-outline button-pill" type="button">
+          Import Leads
+        </button>
       </div>
 
-      <div className="grid-2">
-        <SectionCard title="Live operations" meta="Current system posture">
-          <div className="card hero-strip" style={{ padding: 24 }}>
-            <p className="eyebrow">Campaign pulse</p>
-            <h2 style={{ marginTop: 0 }}>Outbound calling is paced and ready</h2>
-            <p className="muted">
-              Appointment Setter is leading volume today. Renewal Reminder is showing lower reach
-              but higher transfer intent.
+      <div className="grid-4">
+        <StatCard
+          label="Total leads"
+          value={dashboard.stats.totalLeads}
+          delta={`${dashboard.summary.activeCampaigns} active campaigns`}
+          tone="highlight"
+        />
+        <StatCard
+          label="Calls today"
+          value={dashboard.stats.callsToday}
+          delta={`${dashboard.summary.avgDuration} avg duration`}
+        />
+        <StatCard
+          label="Appointments"
+          value={dashboard.stats.appointments}
+          delta={`${dashboard.summary.bookingRate} booking rate`}
+        />
+        <StatCard
+          label="Transfers"
+          value={dashboard.stats.transfers}
+          delta={`${dashboard.summary.liveSipLines} live SIP lines`}
+        />
+      </div>
+
+      <div className="dashboard-grid">
+        <SectionCard title="Campaign analytics" meta="Weekly lead engagement rhythm">
+          <div className="analytics-bars">
+            <div className="bar hatch" />
+            <div className="bar solid soft" />
+            <div className="bar solid medium">
+              <span className="bar-label">{dashboard.summary.bookingRate}</span>
+            </div>
+            <div className="bar solid dark" />
+            <div className="bar hatch tall" />
+            <div className="bar hatch short" />
+            <div className="bar hatch medium" />
+          </div>
+          <div className="analytics-days muted">
+            <span>S</span>
+            <span>M</span>
+            <span>T</span>
+            <span>W</span>
+            <span>T</span>
+            <span>F</span>
+            <span>S</span>
+          </div>
+        </SectionCard>
+
+        <SectionCard title="Reminders" meta="Next priority block">
+          <div className="reminder-card">
+            <h3>Live queue posture</h3>
+            <p className="muted">Current operating status</p>
+            <p className="reminder-copy">
+              {dashboard.stats.callsToday > 0
+                ? `The system has logged ${dashboard.stats.callsToday} calls today and ${dashboard.stats.appointments} scheduled appointments.`
+                : "No live calls have been logged yet. Import leads, configure SIP, and launch the first campaign."}
             </p>
-            <div className="button-row">
-              <span className="button button-primary">Run campaign</span>
-              <span className="button">Preview call modal</span>
+            <button className="button button-primary button-pill" type="button">
+              Open campaign runner
+            </button>
+          </div>
+        </SectionCard>
+
+        <SectionCard title="Priority list" meta="Most recent outcomes">
+          <div className="project-list">
+            {dashboard.recentCalls.length > 0 ? (
+              dashboard.recentCalls.slice(0, 5).map((call, index) => (
+                <div key={call.id} className="project-row">
+                  <div className={`project-dot project-dot-${(index % 5) + 1}`} />
+                  <div>
+                    <strong>{call.lead}</strong>
+                    <p className="muted project-copy">{call.outcome}</p>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="muted">No calls have been completed yet.</p>
+            )}
+          </div>
+        </SectionCard>
+
+        <SectionCard title="Progress" meta="Today&apos;s calling throughput">
+          <div className="progress-panel">
+            <div className="progress-arc">
+              <div className="progress-inner">
+                <strong>{dashboard.summary.bookingRate}</strong>
+                <span className="muted">Booking rate</span>
+              </div>
+            </div>
+            <div className="legend-row muted">
+              <span><i className="legend-dot legend-green" /> Appointments</span>
+              <span><i className="legend-dot legend-deep" /> Transfers</span>
+              <span><i className="legend-dot legend-hatch" /> Open queue</span>
             </div>
           </div>
         </SectionCard>
 
-        <SectionCard title="Recent outcomes" meta="Latest completed calls">
-          <div className="list">
-            {demoCalls.map((call) => (
-              <div key={call.id} className="list-row">
-                <div>
-                  <strong>{call.lead}</strong>
-                  <p className="muted">{call.summary}</p>
-                </div>
-                <div className="stack" style={{ alignItems: "end" }}>
-                  <Badge tone={call.outcome === "appointment_booked" ? "positive" : "indigo"}>
-                    {call.outcome}
-                  </Badge>
-                  <span className="muted">{call.duration}</span>
-                </div>
-              </div>
-            ))}
+        <SectionCard title="Live timer" meta="Current operating window">
+          <div className="timer-card">
+            <p className="eyebrow">Calling Window</p>
+            <strong className="timer-value">{dashboard.summary.avgDuration}</strong>
+            <div className="button-row">
+              <button className="button timer-button" type="button">
+                Calls today
+              </button>
+              <button className="button timer-button timer-stop" type="button">
+                {dashboard.stats.callsToday}
+              </button>
+            </div>
           </div>
         </SectionCard>
       </div>
 
-      <SectionCard title="Campaign snapshot" meta="Two-voice operating model">
-        <div className="grid-2">
-          {demoCampaigns.map((campaign) => (
-            <article key={campaign.id} className="card">
-              <p className="eyebrow">{campaign.assistant}</p>
-              <h3 style={{ marginTop: 0 }}>{campaign.name}</h3>
-              <p className="kpi">{campaign.queued}</p>
-              <p className="muted">Leads queued</p>
-              <Badge tone="indigo">{campaign.successRate} conversion rate</Badge>
+      <div className="grid-2">
+        <SectionCard title="Recent call outcomes" meta="Latest completed conversations">
+          <div className="list">
+            {dashboard.recentCalls.length > 0 ? (
+              dashboard.recentCalls.map((call) => (
+                <div key={call.id} className="list-row">
+                  <div>
+                    <strong>{call.lead}</strong>
+                    <p className="muted">{call.summary}</p>
+                  </div>
+                  <div className="stack" style={{ alignItems: "end" }}>
+                    <Badge tone={call.outcome === "appointment_booked" ? "positive" : "indigo"}>
+                      {call.outcome}
+                    </Badge>
+                    <span className="muted">{call.duration}</span>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="muted">No completed calls yet.</p>
+            )}
+          </div>
+        </SectionCard>
+
+        <SectionCard title="System snapshot" meta="Live workspace health">
+          <div className="campaign-summary">
+            <article className="summary-card">
+              <p className="eyebrow">Leads</p>
+              <h3>Open queue</h3>
+              <p className="kpi">{dashboard.stats.totalLeads}</p>
+              <p className="muted">Total agency leads</p>
+              <Badge tone="positive">{dashboard.summary.activeCampaigns} campaigns</Badge>
             </article>
-          ))}
-        </div>
-      </SectionCard>
+            <article className="summary-card">
+              <p className="eyebrow">Calls</p>
+              <h3>Today</h3>
+              <p className="kpi">{dashboard.stats.callsToday}</p>
+              <p className="muted">Voice sessions created today</p>
+              <Badge tone="indigo">{dashboard.summary.avgDuration} avg</Badge>
+            </article>
+            <article className="summary-card summary-soft">
+              <p className="eyebrow">SIP</p>
+              <h3>Ready lines</h3>
+              <p className="kpi">{dashboard.summary.liveSipLines}</p>
+              <p className="muted">Active phone lines provisioned</p>
+              <Badge tone="positive">{dashboard.stats.transfers} transfers</Badge>
+            </article>
+          </div>
+        </SectionCard>
+      </div>
     </AppShell>
   );
 }
-

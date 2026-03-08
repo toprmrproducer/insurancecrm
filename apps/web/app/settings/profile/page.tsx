@@ -1,26 +1,29 @@
 import { AppShell } from "@/components/app-shell";
 import { SectionCard } from "@/components/ui";
+import { getProfilePageData } from "@/lib/live-data";
 
-export default function ProfileSettingsPage() {
+export default async function ProfileSettingsPage() {
+  const profile = await getProfilePageData();
+
   return (
     <AppShell
       title="Profile"
-      description="User and agency settings preview for the first visual deploy."
+      description="Signed-in user identity and agency details from the active workspace."
     >
       <div className="grid-2">
         <SectionCard title="User profile" meta="Signed-in agent information">
           <div className="list">
             <div className="list-row">
               <span className="muted">Name</span>
-              <strong>Raj Patel</strong>
+              <strong>{profile.profileName}</strong>
             </div>
             <div className="list-row">
               <span className="muted">Role</span>
-              <strong>Admin</strong>
+              <strong>{profile.role}</strong>
             </div>
             <div className="list-row">
               <span className="muted">Email</span>
-              <strong>raj@agency.com</strong>
+              <strong>{profile.email}</strong>
             </div>
           </div>
         </SectionCard>
@@ -29,7 +32,7 @@ export default function ProfileSettingsPage() {
           <div className="list">
             <div className="list-row">
               <span className="muted">Agency name</span>
-              <strong>Raj&apos;s Insurance</strong>
+              <strong>{profile.agencyName}</strong>
             </div>
             <div className="list-row">
               <span className="muted">Timezone</span>

@@ -1,29 +1,36 @@
 import { AppShell } from "@/components/app-shell";
 import { SectionCard, StatCard } from "@/components/ui";
-import { demoAnalytics } from "@/lib/demo";
+import { getAnalyticsData } from "@/lib/live-data";
 
-export default function AnalyticsPage() {
+export default async function AnalyticsPage() {
+  const analytics = await getAnalyticsData();
+
   return (
     <AppShell
       title="Analytics"
-      description="Performance dashboard preview with KPI blocks standing in for the chart layer."
+      description="Live KPI view generated from current lead, call, and analysis records."
     >
       <div className="grid-4">
-        <StatCard label="Booking rate" value={demoAnalytics.bookingRate} delta="Last 30 days" />
-        <StatCard label="Transfer rate" value={demoAnalytics.transferRate} delta="Last 30 days" />
-        <StatCard label="Avg call duration" value={demoAnalytics.avgDuration} delta="All campaigns" />
-        <StatCard label="DNC rate" value={demoAnalytics.dncRate} delta="Needs monitoring" />
+        <StatCard label="Booking rate" value={analytics.bookingRate} delta="Recorded outcomes" />
+        <StatCard label="Transfer rate" value={analytics.transferRate} delta="Recorded outcomes" />
+        <StatCard label="Avg call duration" value={analytics.avgDuration} delta="Completed calls" />
+        <StatCard label="DNC rate" value={analytics.dncRate} delta="Lead base" />
       </div>
 
       <div className="grid-2">
-        <SectionCard title="Chart zone" meta="Replace with Recharts or Tremor">
-          <div className="card hero-strip" style={{ minHeight: 320 }} />
+        <SectionCard title="Performance note" meta="Current read on the agency workspace">
+          <p className="muted">
+            This view is now powered by live counts from your Supabase tables. As calls complete and
+            analyses are stored, the KPI blocks above will change automatically.
+          </p>
         </SectionCard>
-        <SectionCard title="Outcome mix" meta="Replace with pie/bar charts">
-          <div className="card hero-strip" style={{ minHeight: 320 }} />
+        <SectionCard title="Next step" meta="What to wire after the data layer">
+          <p className="muted">
+            Replace this section with line, bar, and pie charts once you want a richer analytics
+            layer. The fake placeholder panels have been removed.
+          </p>
         </SectionCard>
       </div>
     </AppShell>
   );
 }
-

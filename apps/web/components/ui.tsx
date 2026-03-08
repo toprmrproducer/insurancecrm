@@ -4,13 +4,15 @@ export function StatCard({
   label,
   value,
   delta,
+  tone = "default",
 }: {
   label: string;
   value: string | number;
   delta: string;
+  tone?: "default" | "highlight";
 }) {
   return (
-    <article className="card stat-card">
+    <article className={`card stat-card ${tone === "highlight" ? "stat-card-highlight" : ""}`}>
       <p className="muted">{label}</p>
       <strong className="stat-value">{value}</strong>
       <span className="stat-delta">{delta}</span>
@@ -43,4 +45,3 @@ export function SectionCard({
 export function Badge({ children, tone = "default" }: { children: ReactNode; tone?: string }) {
   return <span className={`badge badge-${tone}`}>{children}</span>;
 }
-

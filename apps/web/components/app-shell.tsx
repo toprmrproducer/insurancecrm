@@ -1,6 +1,8 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
+import { getAppShellData } from "@/lib/live-data";
+
 const navItems = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/leads", label: "Leads" },
@@ -12,7 +14,7 @@ const navItems = [
   { href: "/settings/profile", label: "Profile" },
 ];
 
-export function AppShell({
+export async function AppShell({
   title,
   description,
   children,
@@ -21,13 +23,17 @@ export function AppShell({
   description: string;
   children: ReactNode;
 }) {
+  const shell = await getAppShellData();
+
   return (
     <main className="app-shell">
       <aside className="sidebar">
-        <div>
-          <p className="eyebrow">Raj&apos;s CRM</p>
-          <h2 className="sidebar-title">Insurance control center</h2>
-          <p className="muted">Live calling, lead operations, and analysis in one place.</p>
+        <div className="brand-block">
+          <div className="brand-mark">R</div>
+          <div>
+            <p className="eyebrow">Raj&apos;s CRM</p>
+            <h2 className="sidebar-title">Insurance Control</h2>
+          </div>
         </div>
 
         <nav className="sidebar-nav">
@@ -38,19 +44,46 @@ export function AppShell({
           ))}
         </nav>
 
-        <div className="sidebar-footer card">
+        <div className="sidebar-footer promo-card">
           <p className="eyebrow">Agency</p>
-          <strong>Raj&apos;s Insurance</strong>
-          <p className="muted" style={{ marginBottom: 0 }}>
-            Demo preview mode can be deployed before backend secrets are wired.
+          <strong>{shell.agencyName}</strong>
+          <p className="muted" style={{ marginBottom: 16 }}>
+            Voice campaigns, lead routing, and review workflows in one workspace.
           </p>
+          <button className="button button-primary" type="button">
+            Open workspace
+          </button>
         </div>
       </aside>
 
       <section className="content">
+        <div className="topbar card">
+          <div className="search-shell">
+            <span className="search-icon">⌕</span>
+            <span className="muted">Search leads, calls, campaigns</span>
+            <span className="search-shortcut">⌘ F</span>
+          </div>
+
+          <div className="topbar-actions">
+            <button className="icon-button" type="button">
+              ✉
+            </button>
+            <button className="icon-button" type="button">
+              🔔
+            </button>
+            <div className="profile-pill">
+              <div className="profile-avatar">{shell.userInitials}</div>
+              <div>
+                <strong>{shell.userName}</strong>
+                <p className="muted profile-email">{shell.userEmail}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <header className="page-header">
           <div>
-            <p className="eyebrow">Preview</p>
+            <p className="eyebrow">Operations</p>
             <h1>{title}</h1>
           </div>
           <p className="muted">{description}</p>
@@ -60,4 +93,3 @@ export function AppShell({
     </main>
   );
 }
-
