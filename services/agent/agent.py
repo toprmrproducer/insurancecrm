@@ -309,6 +309,17 @@ async def entrypoint(ctx: JobContext) -> None:
         room_input_options=RoomInputOptions(noise_cancellation=True),
     )
 
+    opening_line = agent_config.get("first_line")
+    opening_instructions = (
+        f'Start the outbound call now. Say exactly this opening line first: "{opening_line}"'
+        if opening_line
+        else "Start the outbound call now with a natural greeting."
+    )
+    await session.generate_reply(
+        instructions=opening_instructions,
+        allow_interruptions=True,
+    )
+
     await ctx.wait_for_disconnect()
     await finalize_call(call_id, lead_id, agent)
 
