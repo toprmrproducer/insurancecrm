@@ -1,8 +1,13 @@
 import { LoginForm } from "@/components/login-form";
 import { hasSupabaseAuthEnv, isDemoMode } from "@/lib/env";
 
-export default function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
   const liveEnabled = !isDemoMode() && hasSupabaseAuthEnv();
+  const resolvedSearchParams = await searchParams;
 
   return (
     <main className="shell">
@@ -15,7 +20,7 @@ export default function LoginPage() {
             : "This deployment is not connected to Supabase Auth yet. Add production environment variables to enable real sign-in."}
         </p>
         <div style={{ marginTop: 24 }}>
-          <LoginForm liveEnabled={liveEnabled} />
+          <LoginForm liveEnabled={liveEnabled} queryError={resolvedSearchParams.error ?? null} />
         </div>
       </section>
     </main>
