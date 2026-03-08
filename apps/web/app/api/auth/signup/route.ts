@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 import { env, hasSupabaseAuthEnv } from "@/lib/env";
+import { DatabaseSetupError } from "@/lib/errors";
 import { ensureProvisionedUser } from "@/lib/auth/provision";
 
 const requestSchema = z.object({
@@ -58,6 +59,10 @@ export async function POST(request: NextRequest) {
         : "Account created. Check your email to confirm your account before signing in.",
     });
   } catch (error) {
+    if (error instanceof DatabaseSetupError) {
+      return NextResponse.json({ error: error.message }, { status: 503 });
+    }
+
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: error.issues.map((issue) => issue.message).join(", ") },
@@ -71,4 +76,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

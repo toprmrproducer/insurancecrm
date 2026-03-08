@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { normalizeSupabaseError } from "@/lib/supabase/guards";
 
 type ProvisionUserInput = {
   userId: string;
@@ -7,39 +8,46 @@ type ProvisionUserInput = {
 };
 
 export async function ensureProvisionedUser({ userId, fullName, agencyName }: ProvisionUserInput) {
-  const supabase = createAdminClient();
+  try {
+    const supabase = createAdminClient();
 
-  const { data: existingProfile } = await supabase
-    .from("profiles")
-    .select("id")
-    .eq("id", userId)
-    .maybeSingle();
+    const { data: existingProfile, error: existingProfileError } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("id", userId)
+      .maybeSingle();
 
-  if (existingProfile) {
-    return;
-  }
+    if (existingProfileError) {
+      normalizeSupabaseError(existingProfileError);
+    }
 
-  const { data: agency, error: agencyError } = await supabase
-    .from("agencies")
-    .insert({
-      name: agencyName,
-    })
-    .select("id")
-    .single();
+    if (existingProfile) {
+      return;
+    }
 
-  if (agencyError || !agency) {
-    throw new Error(agencyError?.message ?? "Failed to create agency during sign-up");
-  }
+    const { data: agency, error: agencyError } = await supabase
+      .from("agencies")
+      .insert({
+        name: agencyName,
+      })
+      .select("id")
+      .single();
 
-  const { error: profileError } = await supabase.from("profiles").insert({
-    id: userId,
-    agency_id: agency.id,
-    full_name: fullName,
-    role: "admin",
-  });
+    if (agencyError || !agency) {
+      normalizeSupabaseError(agencyError ?? new Error("Failed to create agency during sign-up"));
+    }
 
-  if (profileError) {
-    throw new Error(profileError.message);
+    const { error: profileError } = await supabase.from("profiles").insert({
+      id: userId,
+      agency_id: agency.id,
+      full_name: fullName,
+      role: "admin",
+    });
+
+    if (profileError) {
+      normalizeSupabaseError(profileError);
+    }
+  } catch (error) {
+    normalizeSupabaseError(error);
   }
 }
-
