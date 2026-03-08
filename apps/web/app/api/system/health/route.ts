@@ -4,7 +4,7 @@ import { env, hasSupabaseAuthEnv } from "@/lib/env";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { normalizeSupabaseError } from "@/lib/supabase/guards";
 
-const requiredTables = ["agencies", "profiles", "leads", "calls", "sip_configurations", "appointments"];
+const requiredTables = ["agencies", "profiles", "leads", "calls", "sip_configurations", "appointments", "orders"];
 
 export async function GET() {
   const checks: Record<string, string> = {};

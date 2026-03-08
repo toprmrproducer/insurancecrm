@@ -7,6 +7,7 @@ import { SidebarNav } from "@/components/sidebar-nav";
 const navItems = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/leads", label: "Leads" },
+  { href: "/orders", label: "Orders" },
   { href: "/calls", label: "Calls" },
   { href: "/campaigns", label: "Campaigns" },
   { href: "/appointments", label: "Appointments" },
@@ -31,7 +32,7 @@ export async function AppShell({
     <main className="app-shell">
       <aside className="sidebar">
         <div className="brand-block">
-          <div className="brand-mark">R</div>
+          <img className="brand-logo" src="/rajcrm-logo.svg" alt="Raj's CRM logo" />
           <div>
             <p className="eyebrow">Raj&apos;s CRM</p>
             <h2 className="sidebar-title">Insurance Control</h2>

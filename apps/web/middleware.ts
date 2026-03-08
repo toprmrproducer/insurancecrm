@@ -11,6 +11,7 @@ type CookieMutation = {
 const protectedPrefixes = [
   "/dashboard",
   "/leads",
+  "/orders",
   "/calls",
   "/campaigns",
   "/appointments",

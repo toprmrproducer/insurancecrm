@@ -28,6 +28,15 @@ const campaignOptions = [
   { value: "renewal_reminder", label: "Renewal Reminder" },
 ] as const;
 
+const pipelineColumns = [
+  { status: "new", label: "New" },
+  { status: "called", label: "Contacted" },
+  { status: "callback_scheduled", label: "Callback" },
+  { status: "appointment_booked", label: "Booked" },
+  { status: "transferred", label: "Transferred" },
+  { status: "dnc", label: "DNC" },
+] as const;
+
 type LeadFormState = {
   firstName: string;
   lastName: string;
@@ -77,6 +86,8 @@ export function LeadOpsPanel({ leads, sipOptions }: LeadOpsPanelProps) {
   const [importing, setImporting] = useState(false);
   const [savingLead, setSavingLead] = useState(false);
   const [updatingLeadId, setUpdatingLeadId] = useState<string | null>(null);
+  const [movingLeadId, setMovingLeadId] = useState<string | null>(null);
+  const [dragLeadId, setDragLeadId] = useState<string | null>(null);
   const [callingLeadId, setCallingLeadId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -219,6 +230,53 @@ export function LeadOpsPanel({ leads, sipOptions }: LeadOpsPanelProps) {
       setMessage(error instanceof Error ? error.message : "Unable to update lead.");
     } finally {
       setUpdatingLeadId(null);
+    }
+  }
+
+  async function moveLeadToStatus(lead: LeadRow, status: string) {
+    const current = getDraft(lead);
+    if (current.status === status) {
+      return;
+    }
+
+    setMovingLeadId(lead.id);
+    setMessage(null);
+
+    setLeadDrafts((drafts) => ({
+      ...drafts,
+      [lead.id]: {
+        ...current,
+        status,
+      },
+    }));
+
+    try {
+      const response = await fetch(`/api/leads/${lead.id}`, {
+        method: "PATCH",
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          status,
+        }),
+      });
+      const payload = await response.json();
+
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Unable to move lead.");
+      }
+
+      setMessage(`${lead.name} moved to ${status}.`);
+      router.refresh();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Unable to move lead.");
+      setLeadDrafts((drafts) => ({
+        ...drafts,
+        [lead.id]: current,
+      }));
+    } finally {
+      setMovingLeadId(null);
+      setDragLeadId(null);
     }
   }
 
@@ -429,6 +487,59 @@ export function LeadOpsPanel({ leads, sipOptions }: LeadOpsPanelProps) {
       </div>
 
       {message ? <p className="muted" style={{ margin: 0 }}>{message}</p> : null}
+
+      <section className="lead-pipeline">
+        {pipelineColumns.map((column) => {
+          const columnLeads = leads.filter((lead) => getDraft(lead).status === column.status);
+
+          return (
+            <article
+              key={column.status}
+              className="pipeline-column"
+              onDragOver={(event) => event.preventDefault()}
+              onDrop={(event) => {
+                event.preventDefault();
+                if (!dragLeadId) {
+                  return;
+                }
+                const draggedLead = leads.find((lead) => lead.id === dragLeadId);
+                if (!draggedLead) {
+                  return;
+                }
+                void moveLeadToStatus(draggedLead, column.status);
+              }}
+            >
+              <header className="pipeline-column-head">
+                <strong>{column.label}</strong>
+                <Badge tone="indigo">{columnLeads.length}</Badge>
+              </header>
+              <div className="pipeline-column-body">
+                {columnLeads.map((lead) => (
+                  <div
+                    key={lead.id}
+                    className={`pipeline-card ${movingLeadId === lead.id ? "pipeline-card-loading" : ""}`}
+                    draggable
+                    onDragStart={() => setDragLeadId(lead.id)}
+                  >
+                    <strong>{lead.name}</strong>
+                    <p className="muted">{lead.phone}</p>
+                    <p className="muted">{lead.campaign}</p>
+                    <div className="button-row">
+                      <button className="button" type="button" onClick={() => handleCall(lead.id)}>
+                        Call
+                      </button>
+                      <button className="button button-outline" type="button" onClick={() => handleUpdateLead(lead)}>
+                        Save
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                {columnLeads.length === 0 ? <p className="muted">Drop lead here</p> : null}
+              </div>
+            </article>
+          );
+        })}
+      </section>
 
       {showImportModal ? (
         <div className="modal-backdrop" onClick={() => setShowImportModal(false)}>

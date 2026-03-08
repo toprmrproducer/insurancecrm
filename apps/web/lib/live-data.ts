@@ -24,6 +24,7 @@ type DashboardData = {
     outcome: string;
     duration: string;
   }>;
+  recentOrders: OrderRow[];
   summary: {
     bookingRate: string;
     avgDuration: string;
@@ -57,6 +58,17 @@ export type CallRow = {
   summary: string;
   recordingUrl: string | null;
   recordingStatus: string | null;
+};
+
+export type OrderRow = {
+  id: string;
+  title: string;
+  customer: string;
+  amount: string;
+  status: string;
+  source: string;
+  createdAt: string;
+  notes: string;
 };
 
 export type ProfilePageData = {
@@ -164,6 +176,51 @@ function formatDuration(seconds?: number | null) {
   return `${String(minutes).padStart(2, "0")}:${String(remainder).padStart(2, "0")}`;
 }
 
+function formatDateTime(value: string) {
+  return new Date(value).toLocaleString("en-US", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+}
+
+async function getRecentOrdersSafe(agencyId: string): Promise<OrderRow[]> {
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await supabase
+    .from("orders")
+    .select("id, title, lead_id, amount, status, source, notes, created_at")
+    .eq("agency_id", agencyId)
+    .order("created_at", { ascending: false })
+    .limit(6);
+
+  if (error || !data) {
+    return [];
+  }
+
+  const leadIds = data.map((order) => order.lead_id).filter(Boolean) as string[];
+  const leadNameMap = new Map<string, string>();
+
+  if (leadIds.length > 0) {
+    const { data: leads } = await supabase
+      .from("leads")
+      .select("id, first_name, last_name")
+      .in("id", leadIds);
+    (leads ?? []).forEach((lead) => {
+      leadNameMap.set(lead.id, formatLeadName(lead.first_name, lead.last_name));
+    });
+  }
+
+  return data.map((order) => ({
+    id: order.id,
+    title: order.title,
+    customer: order.lead_id ? leadNameMap.get(order.lead_id) ?? "Unlinked lead" : "Unlinked lead",
+    amount: formatMoney(order.amount),
+    status: order.status,
+    source: order.source ?? "manual",
+    createdAt: formatDateTime(order.created_at),
+    notes: order.notes ?? "",
+  }));
+}
+
 async function getUserContext(): Promise<UserContext | null> {
   if (isDemoMode() || !hasSupabaseAuthEnv()) {
     return {
@@ -249,6 +306,28 @@ export async function getDashboardData(): Promise<DashboardData> {
         outcome: call.outcome,
         duration: call.duration,
       })),
+      recentOrders: [
+        {
+          id: "demo-order-1",
+          title: "Final Expense Policy",
+          customer: "Eleanor Brooks",
+          amount: "$129",
+          status: "processing",
+          source: "appointment_setter",
+          createdAt: formatDateTime(new Date().toISOString()),
+          notes: "Awaiting underwriting callback",
+        },
+        {
+          id: "demo-order-2",
+          title: "Coverage Upgrade",
+          customer: "Mildred Turner",
+          amount: "$96",
+          status: "completed",
+          source: "renewal_reminder",
+          createdAt: formatDateTime(new Date(Date.now() - 86400000).toISOString()),
+          notes: "Completed after warm transfer",
+        },
+      ],
       summary: {
         bookingRate: demoAnalytics.bookingRate,
         avgDuration: demoAnalytics.avgDuration,
@@ -263,6 +342,7 @@ export async function getDashboardData(): Promise<DashboardData> {
     return {
       stats: { totalLeads: 0, callsToday: 0, appointments: 0, transfers: 0 },
       recentCalls: [],
+      recentOrders: [],
       summary: { bookingRate: "0%", avgDuration: "00:00", activeCampaigns: 0, liveSipLines: 0 },
     };
   }
@@ -319,6 +399,8 @@ export async function getDashboardData(): Promise<DashboardData> {
       .eq("agency_id", context.agencyId),
   ]);
 
+  const recentOrders = await getRecentOrdersSafe(context.agencyId);
+
   const analysisByCallId = new Map(
     (callAnalysisResponse.data ?? []).map((analysis) => [
       analysis.call_id,
@@ -364,6 +446,7 @@ export async function getDashboardData(): Promise<DashboardData> {
       transfers: transfersCount.count ?? 0,
     },
     recentCalls,
+    recentOrders,
     summary: {
       bookingRate:
         (callsTodayCount.count ?? 0) > 0
@@ -759,6 +842,40 @@ export async function getAnalyticsData(): Promise<AnalyticsData> {
       { label: "DNC", value: dnc },
     ],
   };
+}
+
+export async function getOrdersPageData(): Promise<OrderRow[]> {
+  if (isDemoMode() || !hasSupabaseAuthEnv()) {
+    return [
+      {
+        id: "demo-order-1",
+        title: "Final Expense Policy",
+        customer: "Eleanor Brooks",
+        amount: "$129",
+        status: "processing",
+        source: "appointment_setter",
+        createdAt: formatDateTime(new Date().toISOString()),
+        notes: "Awaiting underwriting callback",
+      },
+      {
+        id: "demo-order-2",
+        title: "Coverage Upgrade",
+        customer: "Mildred Turner",
+        amount: "$96",
+        status: "completed",
+        source: "renewal_reminder",
+        createdAt: formatDateTime(new Date(Date.now() - 86400000).toISOString()),
+        notes: "Completed after warm transfer",
+      },
+    ];
+  }
+
+  const context = await getUserContext();
+  if (!context?.agencyId) {
+    return [];
+  }
+
+  return getRecentOrdersSafe(context.agencyId);
 }
 
 export async function getSipConfigOptions(): Promise<SipOption[]> {

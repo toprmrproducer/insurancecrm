@@ -153,29 +153,31 @@ export default async function DashboardPage() {
           </div>
         </SectionCard>
 
-        <SectionCard title="System snapshot" meta="Live workspace health">
-          <div className="campaign-summary">
-            <article className="summary-card">
-              <p className="eyebrow">Leads</p>
-              <h3>Open queue</h3>
-              <p className="kpi">{dashboard.stats.totalLeads}</p>
-              <p className="muted">Total agency leads</p>
-              <Badge tone="positive">{dashboard.summary.activeCampaigns} campaigns</Badge>
-            </article>
-            <article className="summary-card">
-              <p className="eyebrow">Calls</p>
-              <h3>Today</h3>
-              <p className="kpi">{dashboard.stats.callsToday}</p>
-              <p className="muted">Voice sessions created today</p>
-              <Badge tone="indigo">{dashboard.summary.avgDuration} avg</Badge>
-            </article>
-            <article className="summary-card summary-soft">
-              <p className="eyebrow">SIP</p>
-              <h3>Ready lines</h3>
-              <p className="kpi">{dashboard.summary.liveSipLines}</p>
-              <p className="muted">Active phone lines provisioned</p>
-              <Badge tone="positive">{dashboard.stats.transfers} transfers</Badge>
-            </article>
+        <SectionCard title="Recent orders" meta="Adjust incoming policy orders quickly">
+          <div className="list">
+            {dashboard.recentOrders.length > 0 ? (
+              dashboard.recentOrders.map((order) => (
+                <div key={order.id} className="list-row">
+                  <div>
+                    <strong>{order.title}</strong>
+                    <p className="muted">{order.customer}</p>
+                  </div>
+                  <div className="stack" style={{ alignItems: "end" }}>
+                    <Badge tone={order.status === "completed" ? "positive" : "indigo"}>
+                      {order.status}
+                    </Badge>
+                    <span className="muted">{order.amount}</span>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="muted">No orders yet. Add one from the Orders page.</p>
+            )}
+          </div>
+          <div className="button-row" style={{ marginTop: 12 }}>
+            <Link className="button button-outline" href="/orders">
+              Open orders board
+            </Link>
           </div>
         </SectionCard>
       </div>
