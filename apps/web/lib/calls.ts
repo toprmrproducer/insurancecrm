@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { normalizeStoredPhone } from "@/lib/phone";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getAgentDispatchClient, getRoomServiceClient, getSipClient } from "@/lib/livekit";
 
@@ -17,6 +18,7 @@ export type SipConfigRecord = {
   id: string;
   livekit_outbound_trunk_id: string | null;
   vobiz_sip_domain: string | null;
+  phone_number?: string | null;
 };
 
 type StartOutboundCallInput = {
@@ -43,6 +45,12 @@ export async function startOutboundCall({ lead, sipConfig, retryOf }: StartOutbo
   const agentDispatchClient = getAgentDispatchClient();
   const sipClient = getSipClient();
   const roomName = `call-${randomUUID()}`;
+  const dialNumber = normalizeStoredPhone(lead.phone);
+  const fromNumber = normalizeStoredPhone(sipConfig.phone_number);
+
+  if (dialNumber.length < 11) {
+    throw new Error("Lead phone number is not dialable.");
+  }
 
   const { data: call, error: insertError } = await supabase
     .from("calls")
@@ -69,27 +77,40 @@ export async function startOutboundCall({ lead, sipConfig, retryOf }: StartOutbo
     leadId: lead.id,
   });
 
-  await roomServiceClient.createRoom({
-    name: roomName,
-    metadata,
-    emptyTimeout: 300,
-    maxParticipants: 3,
-  });
+  try {
+    await roomServiceClient.createRoom({
+      name: roomName,
+      metadata,
+      emptyTimeout: 300,
+      maxParticipants: 3,
+    });
 
-  await agentDispatchClient.createDispatch(roomName, "insurance-agent", {
-    metadata,
-  });
+    await agentDispatchClient.createDispatch(roomName, "insurance-agent", {
+      metadata,
+    });
 
-  await sipClient.createSipParticipant(
-    sipConfig.livekit_outbound_trunk_id,
-    lead.phone,
-    roomName,
-    {
-      participantIdentity: `lead-${lead.id}`,
-      participantName: lead.first_name,
-      participantMetadata: metadata,
-    },
-  );
+    await sipClient.createSipParticipant(
+      sipConfig.livekit_outbound_trunk_id,
+      dialNumber,
+      roomName,
+      {
+        participantIdentity: `lead-${lead.id}`,
+        participantName: lead.first_name,
+        participantMetadata: metadata,
+        fromNumber: fromNumber || undefined,
+      },
+    );
+  } catch (error) {
+    await supabase
+      .from("calls")
+      .update({
+        status: "failed",
+        ended_at: new Date().toISOString(),
+      })
+      .eq("id", call.id);
+
+    throw error;
+  }
 
   return {
     callId: call.id,

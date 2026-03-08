@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { SIPTransport } from "@livekit/protocol";
+import { SIPMediaEncryption, SIPTransport } from "@livekit/protocol";
 
 import { isAdmin, jsonError, requireAgencyContext } from "@/lib/auth";
 import { hasLivekitEnv, hasSupabaseAuthEnv, isDemoMode } from "@/lib/env";
+import { normalizeStoredPhone } from "@/lib/phone";
 import { getSipClient } from "@/lib/livekit";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
@@ -94,21 +95,31 @@ export async function POST(request: NextRequest) {
     }
 
     const payload = requestSchema.parse(await request.json());
+    const phoneNumber = normalizeStoredPhone(payload.phoneNumber);
+
+    if (phoneNumber.length < 11) {
+      return jsonError("Enter a valid DID / phone number for the SIP line.", 422);
+    }
 
     const outboundTrunk = await sipClient.createSipOutboundTrunk(
       `${payload.label} Outbound`,
       payload.vobizSipDomain,
-      [payload.phoneNumber],
+      [phoneNumber],
       {
         authUsername: payload.vobizUsername,
         authPassword: payload.vobizPassword,
         transport: SIPTransport.SIP_TRANSPORT_UDP,
+        mediaEncryption: SIPMediaEncryption.SIP_MEDIA_ENCRYPT_DISABLE,
       },
     );
 
-    const inboundTrunk = await sipClient.createSipInboundTrunk(`${payload.label} Inbound`, [
-      payload.phoneNumber,
-    ]);
+    const inboundTrunk = await sipClient.createSipInboundTrunk(
+      `${payload.label} Inbound`,
+      [phoneNumber],
+      {
+        mediaEncryption: SIPMediaEncryption.SIP_MEDIA_ENCRYPT_DISABLE,
+      },
+    );
 
     const supabase = await createServerSupabaseClient();
     const { data, error } = await supabase
@@ -122,7 +133,7 @@ export async function POST(request: NextRequest) {
         vobiz_password: payload.vobizPassword,
         livekit_outbound_trunk_id: outboundTrunk.sipTrunkId,
         livekit_inbound_trunk_id: inboundTrunk.sipTrunkId,
-        phone_number: payload.phoneNumber,
+        phone_number: phoneNumber,
         is_active: true,
       })
       .select()

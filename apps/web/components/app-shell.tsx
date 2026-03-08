@@ -12,6 +12,7 @@ const navItems = [
   { href: "/appointments", label: "Appointments" },
   { href: "/analytics", label: "Analytics" },
   { href: "/settings/sip", label: "SIP Settings" },
+  { href: "/settings/agent", label: "Agent Settings" },
   { href: "/settings/profile", label: "Profile" },
 ];
 

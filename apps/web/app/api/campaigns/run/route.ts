@@ -12,6 +12,7 @@ const requestSchema = z.object({
   campaignType: z.enum(["appointment_setter", "renewal_reminder"]),
   maxConcurrent: z.number().int().min(1).max(5).default(3),
   limit: z.number().int().min(1).max(100).default(25),
+  leadIds: z.array(z.string().uuid()).max(100).optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -37,24 +38,31 @@ export async function POST(request: NextRequest) {
     const supabase = createAdminClient();
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
+    const sipConfigPromise = supabase
+      .from("sip_configurations")
+      .select("id, agency_id, livekit_outbound_trunk_id, vobiz_sip_domain, phone_number, is_active")
+      .eq("id", payload.sipConfigId)
+      .eq("agency_id", actor.agencyId)
+      .single();
+
+    const leadQuery = supabase
+      .from("leads")
+      .select("id, agency_id, first_name, phone, campaign_type, status, do_not_call_before")
+      .eq("agency_id", actor.agencyId)
+      .eq("campaign_type", payload.campaignType);
+
+    if (payload.leadIds?.length) {
+      leadQuery.in("id", payload.leadIds);
+    } else {
+      leadQuery
+        .not("status", "in", '("dnc","appointment_booked","transferred")')
+        .or(`last_contacted_at.is.null,last_contacted_at.lt.${sevenDaysAgo}`)
+        .order("created_at", { ascending: true })
+        .limit(payload.limit);
+    }
+
     const [{ data: sipConfig, error: sipError }, { data: leads, error: leadsError }] =
-      await Promise.all([
-        supabase
-          .from("sip_configurations")
-          .select("id, agency_id, livekit_outbound_trunk_id, vobiz_sip_domain, is_active")
-          .eq("id", payload.sipConfigId)
-          .eq("agency_id", actor.agencyId)
-          .single(),
-        supabase
-          .from("leads")
-          .select("id, agency_id, first_name, phone, campaign_type, status, do_not_call_before")
-          .eq("agency_id", actor.agencyId)
-          .eq("campaign_type", payload.campaignType)
-          .not("status", "in", '("dnc","appointment_booked","transferred")')
-          .or(`last_contacted_at.is.null,last_contacted_at.lt.${sevenDaysAgo}`)
-          .order("created_at", { ascending: true })
-          .limit(payload.limit),
-      ]);
+      await Promise.all([sipConfigPromise, leadQuery]);
 
     if (sipError || !sipConfig) {
       return jsonError("SIP configuration not found", 404);

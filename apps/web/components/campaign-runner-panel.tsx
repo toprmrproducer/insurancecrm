@@ -108,10 +108,11 @@ export function CampaignRunnerPanel({ campaigns, sipOptions }: CampaignRunnerPan
 
           return (
             <SectionCard key={campaign.id} title={campaign.name} meta={`Voice assistant: ${campaign.assistant}`}>
-              <div className="grid-3">
+              <div className="grid-4">
                 <StatCard label="Queued" value={campaign.queued} delta="Ready to dial" />
+                <StatCard label="Callable now" value={campaign.callableNow} delta="Within call window" />
                 <StatCard label="Connected" value={campaign.connected} delta="Live workspace" />
-                <StatCard label="Success rate" value={campaign.successRate} delta="Current base" />
+                <StatCard label="Completed" value={campaign.completed} delta={campaign.successRate} />
               </div>
               <div className="button-row" style={{ marginTop: 16 }}>
                 <button
@@ -120,9 +121,10 @@ export function CampaignRunnerPanel({ campaigns, sipOptions }: CampaignRunnerPan
                   disabled={!selectedSipConfigId || loadingCampaignId === campaign.id}
                   onClick={() => handleRun(campaignType)}
                 >
-                  {loadingCampaignId === campaign.id ? "Launching..." : "Run campaign"}
+                  {loadingCampaignId === campaign.id ? "Launching..." : "Start bulk dial"}
                 </button>
                 <Badge tone="indigo">Assistant: {campaign.assistant}</Badge>
+                <Badge tone="positive">{campaign.successRate} success</Badge>
               </div>
             </SectionCard>
           );

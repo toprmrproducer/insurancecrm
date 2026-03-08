@@ -52,16 +52,69 @@ During the first few seconds, if the greeting is clearly automated or there is o
 If the customer says do not call, remove me, or stop calling, confirm politely and call mark_dnc.
 """
 
+DEFAULT_AGENT_CONFIGS = {
+    "appointment_setter": {
+        "model": "gemini-2.5-flash-native-audio-preview-12-2025",
+        "voice": "Aoede",
+        "agent_name": "Mia",
+        "first_line": "Hi, this is Mia with Raj's Insurance. I’m just calling to help you schedule your follow-up.",
+        "prompt": APPOINTMENT_SETTER_PROMPT,
+    },
+    "renewal_reminder": {
+        "model": "gemini-2.5-flash-native-audio-preview-12-2025",
+        "voice": "Aoede",
+        "agent_name": "Ava",
+        "first_line": "Hi, this is Ava with Raj's Insurance. I’m calling to review your current draft and see if you need anything adjusted.",
+        "prompt": RENEWAL_REMINDER_PROMPT,
+    },
+}
+
+
+def load_agent_configuration(agency_id: str, campaign_type: str) -> dict[str, Any]:
+    fallback = DEFAULT_AGENT_CONFIGS.get(campaign_type, DEFAULT_AGENT_CONFIGS["appointment_setter"]).copy()
+
+    try:
+        response = (
+            supabase.table("agent_configurations")
+            .select("model, voice, agent_name, first_line, prompt")
+            .eq("agency_id", agency_id)
+            .eq("campaign_type", campaign_type)
+            .limit(1)
+            .execute()
+        )
+        data = response.data[0] if response.data else None
+        if not data:
+            return fallback
+
+        return {
+            "model": data.get("model") or fallback["model"],
+            "voice": data.get("voice") or fallback["voice"],
+            "agent_name": data.get("agent_name") or fallback["agent_name"],
+            "first_line": data.get("first_line") or fallback["first_line"],
+            "prompt": data.get("prompt") or fallback["prompt"],
+        }
+    except Exception:
+        logger.exception("Unable to load agent configuration; using defaults.")
+        return fallback
+
 
 class InsuranceAgent(Agent):
-    def __init__(self, lead: dict[str, Any], call_id: str, campaign_type: str):
+    def __init__(self, lead: dict[str, Any], call_id: str, campaign_type: str, agent_config: dict[str, Any]):
         self.lead = lead
         self.call_id = call_id
         self.transcript_items: list[dict[str, str]] = []
 
-        prompt = (
+        prompt = agent_config.get("prompt") or (
             RENEWAL_REMINDER_PROMPT if campaign_type == "renewal_reminder" else APPOINTMENT_SETTER_PROMPT
         )
+        first_line = agent_config.get("first_line")
+
+        if first_line:
+            prompt = (
+                f"{prompt}\n\n"
+                "[Opening Line]\n"
+                f'Start the live call with this line unless voicemail is detected: "{first_line}"'
+            )
 
         super().__init__(instructions=prompt)
 
@@ -230,16 +283,22 @@ async def entrypoint(ctx: JobContext) -> None:
         }
     ).eq("id", call_id).execute()
 
+    agent_config = load_agent_configuration(
+        agency_id=lead["agency_id"],
+        campaign_type=lead.get("campaign_type", "appointment_setter"),
+    )
+
     agent = InsuranceAgent(
         lead=lead,
         call_id=call_id,
         campaign_type=lead.get("campaign_type", "appointment_setter"),
+        agent_config=agent_config,
     )
 
     session = AgentSession(
         llm=google.realtime.RealtimeModel(
-            model="gemini-2.5-flash-native-audio-preview-12-2025",
-            voice="Aoede",
+            model=agent_config.get("model", "gemini-2.5-flash-native-audio-preview-12-2025"),
+            voice=agent_config.get("voice", "Aoede"),
             temperature=0.8,
         )
     )

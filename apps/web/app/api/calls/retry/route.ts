@@ -51,7 +51,8 @@ export async function GET(request: NextRequest) {
         sip_configurations!calls_sip_config_id_fkey (
           id,
           livekit_outbound_trunk_id,
-          vobiz_sip_domain
+          vobiz_sip_domain,
+          phone_number
         )
       `,
     )

@@ -4,6 +4,8 @@ import { getAnalyticsData } from "@/lib/live-data";
 
 export default async function AnalyticsPage() {
   const analytics = await getAnalyticsData();
+  const maxCalls = Math.max(...analytics.callsByDay.map((day) => day.value), 1);
+  const maxOutcomes = Math.max(...analytics.outcomes.map((outcome) => outcome.value), 1);
 
   return (
     <AppShell
@@ -18,19 +20,38 @@ export default async function AnalyticsPage() {
       </div>
 
       <div className="grid-2">
-        <SectionCard title="Performance note" meta="Current read on the agency workspace">
-          <p className="muted">
-            Booking, transfer, duration, and DNC metrics are calculated from your live lead, call,
-            and analysis records. As the team imports leads and runs campaigns, these KPI blocks
-            update automatically without any seeded filler data.
-          </p>
+        <SectionCard title="Call volume" meta="Seven-day activity trend">
+          <div className="trend-chart">
+            {analytics.callsByDay.map((day) => (
+              <div key={day.label} className="trend-column">
+                <div
+                  className="trend-fill"
+                  style={{ height: `${Math.max((day.value / maxCalls) * 180, 12)}px` }}
+                />
+                <strong>{day.value}</strong>
+                <span className="muted">{day.label}</span>
+              </div>
+            ))}
+          </div>
         </SectionCard>
-        <SectionCard title="Operational readout" meta="How to interpret the KPI set">
-          <p className="muted">
-            A healthy workspace should show booking and transfer rates rising while DNC stays low.
-            If average duration climbs without conversions, tighten the campaign targeting or revise
-            the voice prompt flow before scaling volume.
-          </p>
+
+        <SectionCard title="Outcome mix" meta="Latest result distribution">
+          <div className="outcome-stack">
+            {analytics.outcomes.map((outcome) => (
+              <div key={outcome.label} className="outcome-row">
+                <div>
+                  <strong>{outcome.label}</strong>
+                  <p className="muted">{outcome.value} records</p>
+                </div>
+                <div className="outcome-meter">
+                  <div
+                    className="outcome-meter-fill"
+                    style={{ width: `${Math.max((outcome.value / maxOutcomes) * 100, 8)}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
         </SectionCard>
       </div>
     </AppShell>

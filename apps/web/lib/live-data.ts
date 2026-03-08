@@ -1,5 +1,6 @@
 import { demoAnalytics, demoCalls, demoLeads, demoStats } from "@/lib/demo";
 import { hasSupabaseAuthEnv, isDemoMode } from "@/lib/env";
+import { formatPhoneDisplay } from "@/lib/phone";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 type ShellData = {
@@ -35,10 +36,16 @@ export type LeadRow = {
   id: string;
   name: string;
   phone: string;
+  email: string;
   campaign: string;
+  campaignType: "appointment_setter" | "renewal_reminder";
   location: string;
+  city: string;
+  state: string;
   premium: string;
   status: string;
+  notes: string;
+  nextFollowupAt: string;
 };
 
 export type CallRow = {
@@ -61,6 +68,7 @@ export type AppointmentRow = {
   id: string;
   lead: string;
   scheduledFor: string;
+  scheduledForIso: string;
   status: string;
 };
 
@@ -70,6 +78,8 @@ export type CampaignCard = {
   assistant: string;
   queued: number;
   connected: number;
+  completed: number;
+  callableNow: number;
   successRate: string;
 };
 
@@ -78,6 +88,8 @@ export type AnalyticsData = {
   transferRate: string;
   avgDuration: string;
   dncRate: string;
+  callsByDay: Array<{ label: string; value: number }>;
+  outcomes: Array<{ label: string; value: number }>;
 };
 
 export type SipOption = {
@@ -367,11 +379,17 @@ export async function getLeadsPageData(): Promise<LeadRow[]> {
     return demoLeads.map((lead) => ({
       id: lead.id,
       name: lead.name,
-      phone: lead.phone,
+      phone: formatPhoneDisplay(lead.phone),
+      email: "demo@agency.com",
       campaign: lead.campaign,
+      campaignType: lead.campaign === "Renewal Reminder" ? "renewal_reminder" : "appointment_setter",
       location: lead.city,
+      city: lead.city,
+      state: "",
       premium: lead.premium,
       status: lead.status,
+      notes: "",
+      nextFollowupAt: "",
     }));
   }
 
@@ -383,18 +401,25 @@ export async function getLeadsPageData(): Promise<LeadRow[]> {
   const supabase = await createServerSupabaseClient();
   const { data } = await supabase
     .from("leads")
-    .select("id, first_name, last_name, phone, campaign_type, city, state, monthly_premium, status")
+    .select("id, first_name, last_name, phone, email, campaign_type, city, state, monthly_premium, status, notes, next_followup_at")
     .eq("agency_id", context.agencyId)
     .order("created_at", { ascending: false });
 
   return (data ?? []).map((lead) => ({
     id: lead.id,
     name: formatLeadName(lead.first_name, lead.last_name),
-    phone: lead.phone,
+    phone: formatPhoneDisplay(lead.phone),
+    email: lead.email ?? "No email",
     campaign: formatCampaignType(lead.campaign_type),
+    campaignType:
+      lead.campaign_type === "renewal_reminder" ? "renewal_reminder" : "appointment_setter",
     location: formatLocation(lead.city, lead.state),
+    city: lead.city ?? "",
+    state: lead.state ?? "",
     premium: formatMoney(lead.monthly_premium),
     status: lead.status,
+    notes: lead.notes ?? "",
+    nextFollowupAt: lead.next_followup_at ?? "",
   }));
 }
 
@@ -514,6 +539,7 @@ export async function getAppointmentsPageData(): Promise<AppointmentRow[]> {
   return (appointments ?? []).map((appointment) => ({
     id: appointment.id,
     lead: leadNameById.get(appointment.lead_id) ?? "Unknown lead",
+    scheduledForIso: appointment.scheduled_for,
     scheduledFor: new Date(appointment.scheduled_for).toLocaleString("en-US", {
       dateStyle: "medium",
       timeStyle: "short",
@@ -525,22 +551,58 @@ export async function getAppointmentsPageData(): Promise<AppointmentRow[]> {
 export async function getCampaignPageData(): Promise<CampaignCard[]> {
   if (isDemoMode() || !hasSupabaseAuthEnv()) {
     return [
-      { id: "campaign-1", name: "Appointment Setter", assistant: "Mia", queued: 218, connected: 47, successRate: "22%" },
-      { id: "campaign-2", name: "Renewal Reminder", assistant: "Ava", queued: 94, connected: 19, successRate: "14%" },
+      {
+        id: "campaign-1",
+        name: "Appointment Setter",
+        assistant: "Mia",
+        queued: 218,
+        connected: 47,
+        completed: 31,
+        callableNow: 190,
+        successRate: "22%",
+      },
+      {
+        id: "campaign-2",
+        name: "Renewal Reminder",
+        assistant: "Ava",
+        queued: 94,
+        connected: 19,
+        completed: 11,
+        callableNow: 82,
+        successRate: "14%",
+      },
     ];
   }
 
   const context = await getUserContext();
   if (!context?.agencyId) {
     return [
-      { id: "appointment_setter", name: "Appointment Setter", assistant: "Mia", queued: 0, connected: 0, successRate: "0%" },
-      { id: "renewal_reminder", name: "Renewal Reminder", assistant: "Ava", queued: 0, connected: 0, successRate: "0%" },
+      {
+        id: "appointment_setter",
+        name: "Appointment Setter",
+        assistant: "Mia",
+        queued: 0,
+        connected: 0,
+        completed: 0,
+        callableNow: 0,
+        successRate: "0%",
+      },
+      {
+        id: "renewal_reminder",
+        name: "Renewal Reminder",
+        assistant: "Ava",
+        queued: 0,
+        connected: 0,
+        completed: 0,
+        callableNow: 0,
+        successRate: "0%",
+      },
     ];
   }
 
   const supabase = await createServerSupabaseClient();
   const [{ data: leads }, { data: calls }] = await Promise.all([
-    supabase.from("leads").select("campaign_type, status").eq("agency_id", context.agencyId),
+    supabase.from("leads").select("campaign_type, status, do_not_call_before").eq("agency_id", context.agencyId),
     supabase.from("calls").select("campaign_type, status").eq("agency_id", context.agencyId),
   ]);
 
@@ -553,8 +615,17 @@ export async function getCampaignPageData(): Promise<CampaignCard[]> {
     const queued = (leads ?? []).filter(
       (lead) => lead.campaign_type === campaign.id && !["appointment_booked", "dnc", "transferred"].includes(lead.status),
     ).length;
+    const callableNow = (leads ?? []).filter(
+      (lead) =>
+        lead.campaign_type === campaign.id &&
+        !["appointment_booked", "dnc", "transferred"].includes(lead.status) &&
+        (!lead.do_not_call_before || new Date(lead.do_not_call_before) <= new Date()),
+    ).length;
     const connected = (calls ?? []).filter(
       (call) => call.campaign_type === campaign.id && ["completed", "in_progress"].includes(call.status),
+    ).length;
+    const completed = (calls ?? []).filter(
+      (call) => call.campaign_type === campaign.id && call.status === "completed",
     ).length;
     const wins = (leads ?? []).filter(
       (lead) =>
@@ -569,6 +640,8 @@ export async function getCampaignPageData(): Promise<CampaignCard[]> {
       assistant: campaign.assistant,
       queued,
       connected,
+      completed,
+      callableNow,
       successRate: `${Math.round((wins / successBase) * 100)}%`,
     };
   });
@@ -581,6 +654,21 @@ export async function getAnalyticsData(): Promise<AnalyticsData> {
       transferRate: demoAnalytics.transferRate,
       avgDuration: demoAnalytics.avgDuration,
       dncRate: demoAnalytics.dncRate,
+      callsByDay: [
+        { label: "Sun", value: 18 },
+        { label: "Mon", value: 22 },
+        { label: "Tue", value: 26 },
+        { label: "Wed", value: 19 },
+        { label: "Thu", value: 24 },
+        { label: "Fri", value: 16 },
+        { label: "Sat", value: 12 },
+      ],
+      outcomes: [
+        { label: "Booked", value: 8 },
+        { label: "Transferred", value: 5 },
+        { label: "Voicemail", value: 7 },
+        { label: "DNC", value: 2 },
+      ],
     };
   }
 
@@ -591,12 +679,27 @@ export async function getAnalyticsData(): Promise<AnalyticsData> {
       transferRate: "0%",
       avgDuration: "00:00",
       dncRate: "0%",
+      callsByDay: [
+        { label: "Sun", value: 0 },
+        { label: "Mon", value: 0 },
+        { label: "Tue", value: 0 },
+        { label: "Wed", value: 0 },
+        { label: "Thu", value: 0 },
+        { label: "Fri", value: 0 },
+        { label: "Sat", value: 0 },
+      ],
+      outcomes: [
+        { label: "Booked", value: 0 },
+        { label: "Transferred", value: 0 },
+        { label: "Voicemail", value: 0 },
+        { label: "DNC", value: 0 },
+      ],
     };
   }
 
   const supabase = await createServerSupabaseClient();
   const [{ data: calls }, { data: analyses }, { data: leads }] = await Promise.all([
-    supabase.from("calls").select("duration_seconds, status").eq("agency_id", context.agencyId),
+    supabase.from("calls").select("duration_seconds, status, created_at").eq("agency_id", context.agencyId),
     supabase.from("call_analysis").select("outcome"),
     supabase.from("leads").select("status").eq("agency_id", context.agencyId),
   ]);
@@ -604,6 +707,7 @@ export async function getAnalyticsData(): Promise<AnalyticsData> {
   const booked = (analyses ?? []).filter((analysis) => analysis.outcome === "appointment_booked").length;
   const transferred = (analyses ?? []).filter((analysis) => analysis.outcome === "transferred").length;
   const dnc = (leads ?? []).filter((lead) => lead.status === "dnc").length;
+  const voicemail = (calls ?? []).filter((call) => call.status === "voicemail").length;
   const completedDurations = (calls ?? [])
     .map((call) => call.duration_seconds ?? 0)
     .filter((duration) => duration > 0);
@@ -615,12 +719,39 @@ export async function getAnalyticsData(): Promise<AnalyticsData> {
       : 0;
   const analysisCount = Math.max(analyses?.length ?? 0, 1);
   const leadCount = Math.max(leads?.length ?? 0, 1);
+  const callsByDay = Array.from({ length: 7 }, (_, index) => {
+    const value = new Date();
+    value.setDate(value.getDate() - (6 - index));
+    value.setHours(0, 0, 0, 0);
+    return value;
+  }).map((day) => {
+    const count = (calls ?? []).filter((call) => {
+      const createdAt = (call as { created_at?: string | null }).created_at;
+      if (!createdAt) {
+        return false;
+      }
+      const created = new Date(createdAt);
+      return created.toDateString() === day.toDateString();
+    }).length;
+
+    return {
+      label: day.toLocaleDateString("en-US", { weekday: "short" }),
+      value: count,
+    };
+  });
 
   return {
     bookingRate: `${Math.round((booked / analysisCount) * 100)}%`,
     transferRate: `${Math.round((transferred / analysisCount) * 100)}%`,
     avgDuration: formatDuration(averageDurationSeconds),
     dncRate: `${Math.round((dnc / leadCount) * 100)}%`,
+    callsByDay,
+    outcomes: [
+      { label: "Booked", value: booked },
+      { label: "Transferred", value: transferred },
+      { label: "Voicemail", value: voicemail },
+      { label: "DNC", value: dnc },
+    ],
   };
 }
 

@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
           .single(),
         supabase
           .from("sip_configurations")
-          .select("id, agency_id, livekit_outbound_trunk_id, vobiz_sip_domain, is_active")
+          .select("id, agency_id, livekit_outbound_trunk_id, vobiz_sip_domain, phone_number, is_active")
           .eq("id", payload.sipConfigId)
           .eq("agency_id", actor.agencyId)
           .single(),
