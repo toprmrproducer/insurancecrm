@@ -30,6 +30,12 @@ export function assertServiceRoleKey(serviceKey: string) {
 export function normalizeSupabaseError(error: unknown): never {
   const message = error instanceof Error ? error.message : "Unexpected Supabase error";
 
+  if (message.includes("row-level security policy")) {
+    throw new DatabaseSetupError(
+      "Supabase rejected a privileged insert because the app is not using a real service_role key. Replace SUPABASE_SERVICE_KEY with the service_role key from Supabase Settings > API, then redeploy.",
+    );
+  }
+
   if (
     message.includes("schema cache") ||
     message.includes("Could not find the table") ||
@@ -43,4 +49,3 @@ export function normalizeSupabaseError(error: unknown): never {
 
   throw error instanceof Error ? error : new Error(message);
 }
-
