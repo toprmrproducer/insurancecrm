@@ -100,6 +100,9 @@ export async function POST(request: NextRequest) {
           initiated += 1;
         } else {
           failed += 1;
+          console.error("[api/campaigns/run] failed lead call", {
+            error: result.reason instanceof Error ? result.reason.message : "Unknown error",
+          });
         }
       });
     }

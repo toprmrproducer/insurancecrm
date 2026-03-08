@@ -74,6 +74,10 @@ export async function POST(request: NextRequest) {
       return error;
     }
 
+    console.error("[api/calls/initiate] failed", {
+      error: error instanceof Error ? error.message : "Unexpected error",
+    });
+
     if (error instanceof z.ZodError) {
       return jsonError(error.issues.map((issue) => issue.message).join(", "), 422);
     }

@@ -87,6 +87,7 @@ export async function startOutboundCall({ lead, sipConfig, retryOf }: StartOutbo
   });
 
   try {
+    console.info("[calls] creating room", { callId: call.id, roomName });
     await roomServiceClient.createRoom({
       name: roomName,
       metadata,
@@ -112,6 +113,7 @@ export async function startOutboundCall({ lead, sipConfig, retryOf }: StartOutbo
       });
 
       try {
+        console.info("[calls] starting egress", { callId: call.id, roomName, recordingPath });
         const egressInfo = await egressClient.startRoomCompositeEgress(roomName, { file: output });
         await markEgressStarted({
           callId: call.id,
@@ -131,10 +133,17 @@ export async function startOutboundCall({ lead, sipConfig, retryOf }: StartOutbo
       }
     }
 
+    console.info("[calls] creating dispatch", { callId: call.id, roomName });
     await agentDispatchClient.createDispatch(roomName, "insurance-agent", {
       metadata,
     });
 
+    console.info("[calls] creating sip participant", {
+      callId: call.id,
+      roomName,
+      dialNumber,
+      fromNumber: fromNumber || null,
+    });
     await sipClient.createSipParticipant(
       sipConfig.livekit_outbound_trunk_id,
       dialNumber,
@@ -152,6 +161,8 @@ export async function startOutboundCall({ lead, sipConfig, retryOf }: StartOutbo
       .update({
         status: "failed",
         ended_at: new Date().toISOString(),
+        recording_status: "failed",
+        recording_error: error instanceof Error ? error.message.slice(0, 1024) : "Call setup failed",
       })
       .eq("id", call.id);
 
