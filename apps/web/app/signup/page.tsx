@@ -10,8 +10,8 @@ export default function SignupPage() {
         <p className="muted">Raj&apos;s Insurance CRM</p>
         <h1 style={{ marginTop: 0 }}>Create account</h1>
         <p className="muted">
-          Create the first admin account for a new agency. Supabase will handle email confirmation
-          and password authentication.
+          Create the first admin account for a new agency. The account is activated immediately,
+          and Supabase password recovery remains available if you forget your password.
         </p>
         <div style={{ marginTop: 24 }}>
           <SignupForm liveEnabled={liveEnabled} />
@@ -20,4 +20,3 @@ export default function SignupPage() {
     </main>
   );
 }
-

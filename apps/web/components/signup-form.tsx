@@ -50,9 +50,7 @@ export function SignupForm({ liveEnabled }: SignupFormProps) {
     }
 
     setMessage(payload.message ?? "Account created.");
-    if (!payload.requiresEmailConfirmation) {
-      router.push("/login");
-    }
+    router.push("/dashboard");
     setLoading(false);
   }
 
@@ -122,4 +120,3 @@ export function SignupForm({ liveEnabled }: SignupFormProps) {
     </div>
   );
 }
-
